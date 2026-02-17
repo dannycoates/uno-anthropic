@@ -22,6 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             })),
             required: Some(vec!["location".to_string()]),
+            ..Default::default()
         },
         ..Default::default()
     })];

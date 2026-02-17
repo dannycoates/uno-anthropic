@@ -174,6 +174,7 @@ mod tests {
                     schema_type: "object".to_string(),
                     properties: Some(serde_json::json!({"location": {"type": "string"}})),
                     required: Some(vec!["location".to_string()]),
+                    ..Default::default()
                 },
                 ..Default::default()
             })])

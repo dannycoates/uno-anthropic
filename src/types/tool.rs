@@ -85,12 +85,19 @@ pub struct Tool {
 /// The JSON Schema for a tool's input.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ToolInputSchema {
+    #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
     #[serde(rename = "type")]
     pub schema_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub required: Option<Vec<String>>,
+    #[serde(
+        rename = "additionalProperties",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub additional_properties: Option<serde_json::Value>,
 }
 
 /// A Bash server tool.
@@ -310,6 +317,7 @@ mod tests {
                     "location": {"type": "string"}
                 })),
                 required: Some(vec!["location".to_string()]),
+                ..Default::default()
             },
             ..Default::default()
         });
@@ -492,6 +500,7 @@ mod tests {
                 "age": {"type": "integer"}
             })),
             required: Some(vec!["name".to_string()]),
+            ..Default::default()
         };
         let json = serde_json::to_string(&schema).unwrap();
         assert!(json.contains(r#""type":"object""#));
