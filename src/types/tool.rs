@@ -226,7 +226,7 @@ impl WebSearchTool {
     pub fn new() -> Self {
         Self {
             tool_type: "web_search_20250305".to_string(),
-            name: "web_search".to_string(),
+            name: "WebSearch".to_string(),
             max_uses: None,
             allowed_domains: None,
             blocked_domains: None,
@@ -416,7 +416,7 @@ mod tests {
         });
         let json = serde_json::to_string(&tool).unwrap();
         assert!(json.contains(r#""type":"web_search_20250305""#));
-        assert!(json.contains(r#""name":"web_search""#));
+        assert!(json.contains(r#""name":"WebSearch""#));
         assert!(json.contains(r#""max_uses":5"#));
         assert!(json.contains(r#""allowed_domains":["example.com"]"#));
     }

@@ -23,6 +23,11 @@ pub const BETA_DEV_FULL_THINKING_2025_05_14: &str = "dev-full-thinking-2025-05-1
 pub const BETA_INTERLEAVED_THINKING_2025_05_14: &str = "interleaved-thinking-2025-05-14";
 pub const BETA_CODE_EXECUTION_2025_05_22: &str = "code-execution-2025-05-22";
 pub const BETA_EXTENDED_CACHE_TTL_2025_04_11: &str = "extended-cache-ttl-2025-04-11";
+pub const BETA_ADAPTIVE_THINKING_2026_01_28: &str = "adaptive-thinking-2026-01-28";
+pub const BETA_CLAUDE_CODE_20250219: &str = "claude-code-20250219";
+pub const BETA_EFFORT_2025_11_24: &str = "effort-2025-11-24";
+pub const BETA_OAUTH_2025_04_20: &str = "oauth-2025-04-20";
+pub const BETA_PROMPT_CACHING_SCOPE_2026_01_05: &str = "prompt-caching-scope-2026-01-05";
 
 /// Service for accessing beta API features.
 ///

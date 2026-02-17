@@ -119,6 +119,27 @@ impl MessageStream {
         }
     }
 
+    /// Create a `MessageStream` from any stream of `StreamEvent` results.
+    ///
+    /// Useful for testing: construct a stream from a pre-built list of events
+    /// without requiring an HTTP connection.
+    pub fn from_stream<S>(stream: S) -> Self
+    where
+        S: Stream<Item = Result<StreamEvent, Error>> + Send + 'static,
+    {
+        Self {
+            inner: Box::pin(stream),
+        }
+    }
+
+    /// Create a `MessageStream` from a pre-built list of events.
+    ///
+    /// Convenience wrapper around `from_stream` that converts a `Vec<StreamEvent>`
+    /// into a stream yielding each event as `Ok(event)`.
+    pub fn from_events(events: Vec<StreamEvent>) -> Self {
+        Self::from_stream(futures::stream::iter(events.into_iter().map(Ok)))
+    }
+
     /// Consume the stream and accumulate events into a final `Message`.
     ///
     /// This processes all stream events, building up the complete message

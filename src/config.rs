@@ -5,7 +5,7 @@ const DEFAULT_BASE_URL: &str = "https://api.anthropic.com";
 const DEFAULT_ANTHROPIC_VERSION: &str = "2023-06-01";
 const DEFAULT_TIMEOUT_SECS: u64 = 600;
 const DEFAULT_MAX_RETRIES: u32 = 2;
-const USER_AGENT: &str = "Anthropic/Rust 0.1.0";
+pub const DEFAULT_USER_AGENT: &str = "Anthropic/Rust 0.1.0";
 
 /// Configuration for the Anthropic API client.
 #[derive(Debug, Clone)]
@@ -15,6 +15,8 @@ pub struct ClientConfig {
     pub max_retries: u32,
     pub timeout: Duration,
     pub default_headers: HeaderMap,
+    pub user_agent: String,
+    pub beta_features: Vec<String>,
 }
 
 impl ClientConfig {
@@ -33,6 +35,8 @@ impl ClientConfig {
             max_retries: DEFAULT_MAX_RETRIES,
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             default_headers: HeaderMap::new(),
+            user_agent: DEFAULT_USER_AGENT.to_string(),
+            beta_features: Vec::new(),
         }
     }
 
@@ -45,14 +49,20 @@ impl ClientConfig {
             reqwest::header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
         );
-        headers.insert(
-            reqwest::header::USER_AGENT,
-            HeaderValue::from_static(USER_AGENT),
-        );
+        if let Ok(val) = HeaderValue::from_str(&self.user_agent) {
+            headers.insert(reqwest::header::USER_AGENT, val);
+        }
 
         if !self.api_key.is_empty() {
             if let Ok(val) = HeaderValue::from_str(&self.api_key) {
                 headers.insert("x-api-key", val);
+            }
+        }
+
+        if !self.beta_features.is_empty() {
+            let beta_value = self.beta_features.join(",");
+            if let Ok(val) = HeaderValue::from_str(&beta_value) {
+                headers.insert("anthropic-beta", val);
             }
         }
 
@@ -83,6 +93,8 @@ mod tests {
             max_retries: DEFAULT_MAX_RETRIES,
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             default_headers: HeaderMap::new(),
+            user_agent: DEFAULT_USER_AGENT.to_string(),
+            beta_features: Vec::new(),
         };
         assert_eq!(config.base_url, "https://api.anthropic.com");
         assert_eq!(config.max_retries, 2);
@@ -97,11 +109,13 @@ mod tests {
             max_retries: DEFAULT_MAX_RETRIES,
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             default_headers: HeaderMap::new(),
+            user_agent: DEFAULT_USER_AGENT.to_string(),
+            beta_features: Vec::new(),
         };
         let headers = config.build_headers();
         assert_eq!(headers.get("anthropic-version").unwrap(), "2023-06-01");
         assert_eq!(headers.get("content-type").unwrap(), "application/json");
-        assert_eq!(headers.get("user-agent").unwrap(), USER_AGENT);
+        assert_eq!(headers.get("user-agent").unwrap(), DEFAULT_USER_AGENT);
         assert!(headers.get("x-api-key").is_none());
     }
 
@@ -113,6 +127,8 @@ mod tests {
             max_retries: DEFAULT_MAX_RETRIES,
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             default_headers: HeaderMap::new(),
+            user_agent: DEFAULT_USER_AGENT.to_string(),
+            beta_features: Vec::new(),
         };
         let headers = config.build_headers();
         assert_eq!(headers.get("x-api-key").unwrap(), "sk-ant-test-key");
@@ -129,6 +145,8 @@ mod tests {
             max_retries: DEFAULT_MAX_RETRIES,
             timeout: Duration::from_secs(DEFAULT_TIMEOUT_SECS),
             default_headers: custom,
+            user_agent: DEFAULT_USER_AGENT.to_string(),
+            beta_features: Vec::new(),
         };
         let headers = config.build_headers();
         assert_eq!(headers.get("anthropic-version").unwrap(), "2024-01-01");

@@ -380,6 +380,18 @@ impl ClientBuilder {
         self
     }
 
+    /// Set the User-Agent string.
+    pub fn user_agent(mut self, ua: impl Into<String>) -> Self {
+        self.config.user_agent = ua.into();
+        self
+    }
+
+    /// Set the beta features to enable via the `anthropic-beta` header.
+    pub fn beta_features(mut self, betas: Vec<String>) -> Self {
+        self.config.beta_features = betas;
+        self
+    }
+
     /// Add a default header.
     pub fn default_header(mut self, name: &str, value: &str) -> Self {
         if let (Ok(name), Ok(value)) = (
