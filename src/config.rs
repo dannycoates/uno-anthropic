@@ -53,10 +53,8 @@ impl ClientConfig {
             headers.insert(reqwest::header::USER_AGENT, val);
         }
 
-        if !self.api_key.is_empty() {
-            if let Ok(val) = HeaderValue::from_str(&self.api_key) {
-                headers.insert("x-api-key", val);
-            }
+        if !self.api_key.is_empty() && let Ok(val) = HeaderValue::from_str(&self.api_key) {
+            headers.insert("x-api-key", val);
         }
 
         if !self.beta_features.is_empty() {

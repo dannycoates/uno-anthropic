@@ -33,10 +33,8 @@ impl RetryPolicy {
     /// precedence as long as it is reasonable (< 60 seconds).
     pub fn delay_for_attempt(&self, attempt: u32, retry_after: Option<Duration>) -> Duration {
         // If the server told us to wait and it's reasonable, use that
-        if let Some(ra) = retry_after {
-            if ra < Duration::from_secs(60) {
-                return ra;
-            }
+        if let Some(ra) = retry_after && ra < Duration::from_secs(60) {
+            return ra;
         }
 
         // Exponential backoff: initial_delay * 2^attempt
@@ -63,26 +61,23 @@ impl RetryPolicy {
 /// - `Retry-After: <HTTP-date>` (RFC 2822 / RFC 1123 format)
 pub fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
     // Check Retry-After-Ms first (milliseconds)
-    if let Some(val) = headers.get("retry-after-ms") {
-        if let Ok(s) = val.to_str() {
-            if let Ok(ms) = s.parse::<f64>() {
-                return Some(Duration::from_millis(ms as u64));
-            }
-        }
+    if let Some(val) = headers.get("retry-after-ms")
+        && let Ok(s) = val.to_str()
+        && let Ok(ms) = s.parse::<f64>()
+    {
+        return Some(Duration::from_millis(ms as u64));
     }
 
     // Check Retry-After (seconds or HTTP-date)
-    if let Some(val) = headers.get("retry-after") {
-        if let Ok(s) = val.to_str() {
-            // Try parsing as number of seconds
-            if let Ok(secs) = s.parse::<f64>() {
-                return Some(Duration::from_secs_f64(secs));
-            }
-            // Try parsing as HTTP-date (RFC 1123)
-            // Example: "Wed, 21 Oct 2015 07:28:00 GMT"
-            // We don't implement full HTTP-date parsing here; in practice
-            // the Anthropic API uses numeric values.
+    if let Some(val) = headers.get("retry-after") && let Ok(s) = val.to_str() {
+        // Try parsing as number of seconds
+        if let Ok(secs) = s.parse::<f64>() {
+            return Some(Duration::from_secs_f64(secs));
         }
+        // Try parsing as HTTP-date (RFC 1123)
+        // Example: "Wed, 21 Oct 2015 07:28:00 GMT"
+        // We don't implement full HTTP-date parsing here; in practice
+        // the Anthropic API uses numeric values.
     }
 
     None

@@ -188,13 +188,12 @@ impl MessageStream {
                 StreamEvent::ContentBlockStop { index } => {
                     let idx = *index as usize;
                     // Finalize tool_use blocks: parse accumulated partial JSON into input
-                    if let Some(json_str) = partial_json_bufs.remove(&idx) {
-                        if idx < content_blocks.len() {
-                            if let ContentBlock::ToolUse(ref mut tool_use) = content_blocks[idx] {
-                                tool_use.input = serde_json::from_str(&json_str)
-                                    .unwrap_or(serde_json::Value::String(json_str));
-                            }
-                        }
+                    if let Some(json_str) = partial_json_bufs.remove(&idx)
+                        && idx < content_blocks.len()
+                        && let ContentBlock::ToolUse(ref mut tool_use) = content_blocks[idx]
+                    {
+                        tool_use.input = serde_json::from_str(&json_str)
+                            .unwrap_or(serde_json::Value::String(json_str));
                     }
                 }
                 StreamEvent::MessageDelta { delta, usage } => {
