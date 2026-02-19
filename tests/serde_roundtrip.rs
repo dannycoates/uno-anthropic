@@ -8,6 +8,7 @@ use uno_anthropic::types::image::*;
 use uno_anthropic::types::message::*;
 use uno_anthropic::types::metadata::*;
 use uno_anthropic::types::model::*;
+use uno_anthropic::types::search::*;
 use uno_anthropic::types::thinking::*;
 use uno_anthropic::types::tool::*;
 
@@ -172,6 +173,8 @@ fn tool_definition_deserialize_dispatches_correctly() {
             ToolDefinition::TextEditor20250429(_) => "TextEditor20250429",
             ToolDefinition::TextEditor20250728(_) => "TextEditor20250728",
             ToolDefinition::WebSearch(_) => "WebSearch",
+            ToolDefinition::WebSearch20260209(_) => "WebSearch20260209",
+            ToolDefinition::WebFetch20260209(_) => "WebFetch20260209",
             ToolDefinition::Custom(_) => "Custom",
             _ => "Unknown",
         };
@@ -571,10 +574,12 @@ fn roundtrip_web_search_tool_result_content() {
     let _: WebSearchToolResultContent = serde_json::from_str(&reserialized).unwrap();
 
     // Error variant
-    let error_json = r#"{"type":"web_search_error","error_code":"rate_limited"}"#;
+    let error_json = r#"{"type":"web_search_error","error_code":"too_many_requests"}"#;
     let content: WebSearchToolResultContent = serde_json::from_str(error_json).unwrap();
     match content {
-        WebSearchToolResultContent::Error(e) => assert_eq!(e.error_code, "rate_limited"),
+        WebSearchToolResultContent::Error(e) => {
+            assert_eq!(e.error_code, WebSearchToolResultErrorCode::TooManyRequests)
+        }
         _ => panic!("Expected Error"),
     }
 }
@@ -696,4 +701,250 @@ fn roundtrip_document_block_param() {
         cache_control: None,
     });
     roundtrip_json(&param);
+}
+
+// ── Model::ClaudeSonnet4_6 ────────────────────────────────────────────
+
+#[test]
+fn roundtrip_model_claude_sonnet_4_6() {
+    let model = Model::ClaudeSonnet4_6;
+    let json = roundtrip_json(&model);
+    assert_eq!(json, r#""claude-sonnet-4-6""#);
+
+    let deserialized: Model = serde_json::from_str(r#""claude-sonnet-4-6""#).unwrap();
+    assert_eq!(deserialized, Model::ClaudeSonnet4_6);
+}
+
+// ── UserLocation (renamed from WebSearchUserLocation) ─────────────────
+
+#[test]
+fn roundtrip_user_location() {
+    let loc = UserLocation {
+        location_type: "approximate".to_string(),
+        city: Some("Paris".to_string()),
+        region: None,
+        country: Some("FR".to_string()),
+        timezone: Some("Europe/Paris".to_string()),
+    };
+    let json = roundtrip_json(&loc);
+    assert!(json.contains(r#""type":"approximate""#));
+    assert!(json.contains(r#""city":"Paris""#));
+    assert!(!json.contains("region"));
+
+    // The backward-compat alias still works
+    let alias: WebSearchUserLocation = serde_json::from_str(&json).unwrap();
+    assert_eq!(alias.location_type, "approximate");
+}
+
+// ── WebSearchToolResultErrorCode ──────────────────────────────────────
+
+#[test]
+fn roundtrip_web_search_tool_result_error_code_all_variants() {
+    let variants = vec![
+        (WebSearchToolResultErrorCode::InvalidToolInput, "invalid_tool_input"),
+        (WebSearchToolResultErrorCode::Unavailable, "unavailable"),
+        (WebSearchToolResultErrorCode::MaxUsesExceeded, "max_uses_exceeded"),
+        (WebSearchToolResultErrorCode::TooManyRequests, "too_many_requests"),
+        (WebSearchToolResultErrorCode::QueryTooLong, "query_too_long"),
+        (WebSearchToolResultErrorCode::RequestTooLarge, "request_too_large"),
+    ];
+    for (variant, expected_str) in variants {
+        let json = serde_json::to_string(&variant).unwrap();
+        assert_eq!(json, format!("\"{}\"", expected_str));
+        let deserialized: WebSearchToolResultErrorCode = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, variant);
+    }
+}
+
+// ── WebFetchToolResultErrorCode ───────────────────────────────────────
+
+#[test]
+fn roundtrip_web_fetch_tool_result_error_code_all_variants() {
+    let variants = vec![
+        (WebFetchToolResultErrorCode::InvalidToolInput, "invalid_tool_input"),
+        (WebFetchToolResultErrorCode::UrlTooLong, "url_too_long"),
+        (WebFetchToolResultErrorCode::UrlNotAllowed, "url_not_allowed"),
+        (WebFetchToolResultErrorCode::UrlNotAccessible, "url_not_accessible"),
+        (WebFetchToolResultErrorCode::UnsupportedContentType, "unsupported_content_type"),
+        (WebFetchToolResultErrorCode::TooManyRequests, "too_many_requests"),
+        (WebFetchToolResultErrorCode::MaxUsesExceeded, "max_uses_exceeded"),
+        (WebFetchToolResultErrorCode::Unavailable, "unavailable"),
+    ];
+    for (variant, expected_str) in variants {
+        let json = serde_json::to_string(&variant).unwrap();
+        assert_eq!(json, format!("\"{}\"", expected_str));
+        let deserialized: WebFetchToolResultErrorCode = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, variant);
+    }
+}
+
+// ── ToolSearchToolResultErrorCode ─────────────────────────────────────
+
+#[test]
+fn roundtrip_tool_search_tool_result_error_code_all_variants() {
+    let variants = vec![
+        (ToolSearchToolResultErrorCode::InvalidToolInput, "invalid_tool_input"),
+        (ToolSearchToolResultErrorCode::Unavailable, "unavailable"),
+        (ToolSearchToolResultErrorCode::TooManyRequests, "too_many_requests"),
+        (ToolSearchToolResultErrorCode::ExecutionTimeExceeded, "execution_time_exceeded"),
+    ];
+    for (variant, expected_str) in variants {
+        let json = serde_json::to_string(&variant).unwrap();
+        assert_eq!(json, format!("\"{}\"", expected_str));
+        let deserialized: ToolSearchToolResultErrorCode = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, variant);
+    }
+}
+
+// ── ToolDefinition::WebSearch20260209 ────────────────────────────────
+
+#[test]
+fn roundtrip_tool_definition_web_search_20260209() {
+    let tool = ToolDefinition::WebSearch20260209(WebSearchTool20260209 {
+        max_uses: Some(5),
+        allowed_domains: Some(vec!["example.com".to_string()]),
+        allowed_callers: Some(vec!["code_execution".to_string()]),
+        defer_loading: Some(true),
+        ..WebSearchTool20260209::new()
+    });
+    let json = roundtrip_json(&tool);
+    assert!(json.contains(r#""type":"web_search_20260209""#));
+    assert!(json.contains(r#""max_uses":5"#));
+    assert!(json.contains(r#""defer_loading":true"#));
+}
+
+#[test]
+fn deserialize_tool_definition_web_search_20260209() {
+    let json = r#"{"type":"web_search_20260209","name":"web_search","max_uses":3}"#;
+    let tool: ToolDefinition = serde_json::from_str(json).unwrap();
+    match tool {
+        ToolDefinition::WebSearch20260209(w) => {
+            assert_eq!(w.tool_type, "web_search_20260209");
+            assert_eq!(w.max_uses, Some(3));
+        }
+        _ => panic!("Expected WebSearch20260209 variant"),
+    }
+}
+
+// ── ToolDefinition::WebFetch20260209 ─────────────────────────────────
+
+#[test]
+fn roundtrip_tool_definition_web_fetch_20260209() {
+    let tool = ToolDefinition::WebFetch20260209(WebFetchTool20260209 {
+        max_content_tokens: Some(10000),
+        max_uses: Some(3),
+        ..WebFetchTool20260209::new()
+    });
+    let json = roundtrip_json(&tool);
+    assert!(json.contains(r#""type":"web_fetch_20260209""#));
+    assert!(json.contains(r#""name":"web_fetch""#));
+    assert!(json.contains(r#""max_content_tokens":10000"#));
+}
+
+#[test]
+fn deserialize_tool_definition_web_fetch_20260209() {
+    let json = r#"{"type":"web_fetch_20260209","name":"web_fetch","max_uses":2}"#;
+    let tool: ToolDefinition = serde_json::from_str(json).unwrap();
+    match tool {
+        ToolDefinition::WebFetch20260209(w) => {
+            assert_eq!(w.tool_type, "web_fetch_20260209");
+            assert_eq!(w.max_uses, Some(2));
+        }
+        _ => panic!("Expected WebFetch20260209 variant"),
+    }
+}
+
+// ── ContentBlock::ContainerUpload ─────────────────────────────────────
+
+#[test]
+fn roundtrip_content_block_container_upload() {
+    let json = r#"{"type":"container_upload","file_id":"file_abc123"}"#;
+    let block: ContentBlock = serde_json::from_str(json).unwrap();
+    match &block {
+        ContentBlock::ContainerUpload(c) => assert_eq!(c.file_id, "file_abc123"),
+        _ => panic!("Expected ContainerUpload"),
+    }
+    let reserialized = serde_json::to_string(&block).unwrap();
+    assert_eq!(reserialized, json);
+}
+
+// ── ContentBlock::WebFetchToolResult ─────────────────────────────────
+
+#[test]
+fn roundtrip_content_block_web_fetch_tool_result_success() {
+    let json = r#"{"type":"web_fetch_tool_result","tool_use_id":"stu_1","content":{"url":"https://example.com","content":{"type":"text","media_type":"text/plain","data":"Hello"},"retrieved_at":"2026-02-18T00:00:00Z"}}"#;
+    let block: ContentBlock = serde_json::from_str(json).unwrap();
+    match &block {
+        ContentBlock::WebFetchToolResult(w) => {
+            assert_eq!(w.tool_use_id, "stu_1");
+            assert!(matches!(w.content, WebFetchToolResultContent::Success(_)));
+        }
+        _ => panic!("Expected WebFetchToolResult"),
+    }
+    let reserialized = serde_json::to_string(&block).unwrap();
+    let _: ContentBlock = serde_json::from_str(&reserialized).unwrap();
+}
+
+#[test]
+fn roundtrip_content_block_web_fetch_tool_result_error() {
+    let json = r#"{"type":"web_fetch_tool_result","tool_use_id":"stu_2","content":{"error_code":"url_not_accessible"}}"#;
+    let block: ContentBlock = serde_json::from_str(json).unwrap();
+    match &block {
+        ContentBlock::WebFetchToolResult(w) => {
+            assert_eq!(w.tool_use_id, "stu_2");
+            match &w.content {
+                WebFetchToolResultContent::Error(e) => {
+                    assert_eq!(e.error_code, WebFetchToolResultErrorCode::UrlNotAccessible)
+                }
+                _ => panic!("Expected Error content"),
+            }
+        }
+        _ => panic!("Expected WebFetchToolResult"),
+    }
+    let reserialized = serde_json::to_string(&block).unwrap();
+    let _: ContentBlock = serde_json::from_str(&reserialized).unwrap();
+}
+
+// ── ContentBlock::ToolSearchToolResult ───────────────────────────────
+
+#[test]
+fn roundtrip_content_block_tool_search_tool_result_success() {
+    let json = r#"{"type":"tool_search_tool_result","tool_use_id":"stu_3","content":{"tool_references":[{"tool_name":"web_search","description":"Search the web"}]}}"#;
+    let block: ContentBlock = serde_json::from_str(json).unwrap();
+    match &block {
+        ContentBlock::ToolSearchToolResult(t) => {
+            assert_eq!(t.tool_use_id, "stu_3");
+            match &t.content {
+                ToolSearchToolResultContent::SearchResult(s) => {
+                    assert_eq!(s.tool_references.len(), 1);
+                    assert_eq!(s.tool_references[0].tool_name, "web_search");
+                }
+                _ => panic!("Expected SearchResult content"),
+            }
+        }
+        _ => panic!("Expected ToolSearchToolResult"),
+    }
+    let reserialized = serde_json::to_string(&block).unwrap();
+    let _: ContentBlock = serde_json::from_str(&reserialized).unwrap();
+}
+
+#[test]
+fn roundtrip_content_block_tool_search_tool_result_error() {
+    let json = r#"{"type":"tool_search_tool_result","tool_use_id":"stu_4","content":{"error_code":"too_many_requests","error_message":"Rate limit exceeded"}}"#;
+    let block: ContentBlock = serde_json::from_str(json).unwrap();
+    match &block {
+        ContentBlock::ToolSearchToolResult(t) => {
+            assert_eq!(t.tool_use_id, "stu_4");
+            match &t.content {
+                ToolSearchToolResultContent::Error(e) => {
+                    assert_eq!(e.error_code, ToolSearchToolResultErrorCode::TooManyRequests);
+                    assert_eq!(e.error_message, "Rate limit exceeded");
+                }
+                _ => panic!("Expected Error content"),
+            }
+        }
+        _ => panic!("Expected ToolSearchToolResult"),
+    }
+    let reserialized = serde_json::to_string(&block).unwrap();
+    let _: ContentBlock = serde_json::from_str(&reserialized).unwrap();
 }

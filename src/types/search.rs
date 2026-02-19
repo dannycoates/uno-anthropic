@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// User location for web search queries.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WebSearchUserLocation {
+pub struct UserLocation {
     #[serde(rename = "type")]
     pub location_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -15,7 +15,10 @@ pub struct WebSearchUserLocation {
     pub timezone: Option<String>,
 }
 
-impl WebSearchUserLocation {
+/// Backward-compatible alias for [`UserLocation`].
+pub type WebSearchUserLocation = UserLocation;
+
+impl UserLocation {
     /// Create a new approximate user location.
     pub fn approximate() -> Self {
         Self {

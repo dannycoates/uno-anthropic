@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use super::document::DocumentSource;
 use super::metadata::CacheControl;
 
 // ── Response content blocks ──────────────────────────────────────────
@@ -15,6 +16,9 @@ pub enum ContentBlock {
     ToolUse(ToolUseBlock),
     ServerToolUse(ServerToolUseBlock),
     WebSearchToolResult(WebSearchToolResultBlock),
+    ContainerUpload(ContainerUploadBlock),
+    WebFetchToolResult(WebFetchToolResultBlock),
+    ToolSearchToolResult(ToolSearchToolResultBlock),
 }
 
 /// A text content block in a response.
@@ -90,9 +94,118 @@ pub struct WebSearchResultBlock {
 pub struct WebSearchToolRequestError {
     #[serde(rename = "type")]
     pub error_type: String,
-    pub error_code: String,
+    pub error_code: WebSearchToolResultErrorCode,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
+}
+
+/// Typed error codes for web search tool results.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum WebSearchToolResultErrorCode {
+    InvalidToolInput,
+    Unavailable,
+    MaxUsesExceeded,
+    TooManyRequests,
+    QueryTooLong,
+    RequestTooLarge,
+}
+
+/// Typed error codes for web fetch tool results.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum WebFetchToolResultErrorCode {
+    InvalidToolInput,
+    UrlTooLong,
+    UrlNotAllowed,
+    UrlNotAccessible,
+    UnsupportedContentType,
+    TooManyRequests,
+    MaxUsesExceeded,
+    Unavailable,
+}
+
+/// A container upload content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerUploadBlock {
+    pub file_id: String,
+}
+
+/// A web fetch tool result content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchToolResultBlock {
+    pub tool_use_id: String,
+    pub content: WebFetchToolResultContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caller: Option<serde_json::Value>,
+}
+
+/// Content of a web fetch tool result: either a fetched page or an error.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum WebFetchToolResultContent {
+    Success(WebFetchBlock),
+    Error(WebFetchToolResultErrorBlock),
+}
+
+/// A successful web fetch result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchBlock {
+    pub url: String,
+    pub content: DocumentSource,
+    pub retrieved_at: String,
+}
+
+/// An error from a web fetch tool request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchToolResultErrorBlock {
+    pub error_code: WebFetchToolResultErrorCode,
+}
+
+/// A tool search tool result content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchToolResultBlock {
+    pub tool_use_id: String,
+    pub content: ToolSearchToolResultContent,
+}
+
+/// Content of a tool search tool result: either search results or an error.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ToolSearchToolResultContent {
+    SearchResult(ToolSearchToolSearchResultBlock),
+    Error(ToolSearchToolResultError),
+}
+
+/// A successful tool search result block.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchToolSearchResultBlock {
+    pub tool_references: Vec<ToolReferenceBlock>,
+}
+
+/// A tool reference within a tool search result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolReferenceBlock {
+    pub tool_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+/// An error from a tool search tool request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchToolResultError {
+    pub error_code: ToolSearchToolResultErrorCode,
+    pub error_message: String,
+}
+
+/// Typed error codes for tool search tool results.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolSearchToolResultErrorCode {
+    InvalidToolInput,
+    Unavailable,
+    TooManyRequests,
+    ExecutionTimeExceeded,
 }
 
 // ── Request content blocks ───────────────────────────────────────────
@@ -112,6 +225,9 @@ pub enum ContentBlockParam {
     ServerToolUse(ServerToolUseBlockParam),
     WebSearchToolResult(WebSearchToolResultBlockParam),
     SearchResult(SearchResultBlockParam),
+    ContainerUpload(ContainerUploadBlockParam),
+    WebFetchToolResult(WebFetchToolResultBlockParam),
+    ToolSearchToolResult(ToolSearchToolResultBlockParam),
 }
 
 /// A text block in a request.
@@ -252,6 +368,32 @@ pub struct SearchResultTextContent {
     #[serde(rename = "type")]
     pub content_type: String,
     pub text: String,
+}
+
+/// A container upload block in a request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerUploadBlockParam {
+    pub file_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// A web fetch tool result block in a request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchToolResultBlockParam {
+    pub tool_use_id: String,
+    pub content: WebFetchToolResultContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// A tool search tool result block in a request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchToolResultBlockParam {
+    pub tool_use_id: String,
+    pub content: ToolSearchToolResultContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
 }
 
 impl From<&str> for ToolResultContent {
@@ -415,7 +557,10 @@ mod tests {
         let content: WebSearchToolResultContent = serde_json::from_str(json).unwrap();
         match content {
             WebSearchToolResultContent::Error(err) => {
-                assert_eq!(err.error_code, "max_uses_exceeded");
+                assert!(matches!(
+                    err.error_code,
+                    WebSearchToolResultErrorCode::MaxUsesExceeded
+                ));
             }
             _ => panic!("Expected Error variant"),
         }

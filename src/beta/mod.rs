@@ -28,6 +28,7 @@ pub const BETA_CLAUDE_CODE_20250219: &str = "claude-code-20250219";
 pub const BETA_EFFORT_2025_11_24: &str = "effort-2025-11-24";
 pub const BETA_OAUTH_2025_04_20: &str = "oauth-2025-04-20";
 pub const BETA_PROMPT_CACHING_SCOPE_2026_01_05: &str = "prompt-caching-scope-2026-01-05";
+pub const BETA_CODE_EXECUTION_2026_01_20: &str = "code-execution-20260120";
 
 /// Service for accessing beta API features.
 ///

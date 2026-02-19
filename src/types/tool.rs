@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::metadata::CacheControl;
-use super::search::WebSearchUserLocation;
+use super::search::UserLocation;
 
 /// A tool definition. Server tools (Bash, TextEditor, WebSearch) are distinguished
 /// by their `type` field value. Custom tools are the catch-all for tools with an
@@ -18,6 +18,8 @@ pub enum ToolDefinition {
     TextEditor20250429(TextEditorTool429),
     TextEditor20250728(TextEditorTool728),
     WebSearch(WebSearchTool),
+    WebSearch20260209(WebSearchTool20260209),
+    WebFetch20260209(WebFetchTool20260209),
     Custom(Tool),
 }
 
@@ -54,6 +56,16 @@ impl<'de> Deserialize<'de> for ToolDefinition {
                 let tool: WebSearchTool =
                     serde_json::from_value(value).map_err(serde::de::Error::custom)?;
                 Ok(ToolDefinition::WebSearch(tool))
+            }
+            Some("web_search_20260209") => {
+                let tool: WebSearchTool20260209 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::WebSearch20260209(tool))
+            }
+            Some("web_fetch_20260209") => {
+                let tool: WebFetchTool20260209 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::WebFetch20260209(tool))
             }
             _ => {
                 // No type or unrecognized type -> Custom tool
@@ -221,7 +233,7 @@ pub struct WebSearchTool {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub blocked_domains: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user_location: Option<WebSearchUserLocation>,
+    pub user_location: Option<UserLocation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -245,6 +257,102 @@ impl WebSearchTool {
 }
 
 impl Default for WebSearchTool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A web search server tool (2026-02-09 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebSearchTool20260209 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blocked_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_location: Option<UserLocation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strict: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_callers: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defer_loading: Option<bool>,
+}
+
+impl WebSearchTool20260209 {
+    /// Create a new web search tool (2026-02-09) with defaults.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "web_search_20260209".to_string(),
+            name: "web_search".to_string(),
+            max_uses: None,
+            allowed_domains: None,
+            blocked_domains: None,
+            user_location: None,
+            cache_control: None,
+            strict: None,
+            allowed_callers: None,
+            defer_loading: None,
+        }
+    }
+}
+
+impl Default for WebSearchTool20260209 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A web fetch server tool (2026-02-09 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchTool20260209 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_content_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defer_loading: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strict: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blocked_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_callers: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl WebFetchTool20260209 {
+    /// Create a new web fetch tool (2026-02-09) with defaults.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "web_fetch_20260209".to_string(),
+            name: "web_fetch".to_string(),
+            max_content_tokens: None,
+            max_uses: None,
+            defer_loading: None,
+            strict: None,
+            allowed_domains: None,
+            blocked_domains: None,
+            allowed_callers: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for WebFetchTool20260209 {
     fn default() -> Self {
         Self::new()
     }

@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 pub enum Model {
     #[serde(rename = "claude-opus-4-6")]
     ClaudeOpus4_6,
+    #[serde(rename = "claude-sonnet-4-6")]
+    ClaudeSonnet4_6,
     #[serde(rename = "claude-opus-4-5-20251101")]
     ClaudeOpus4_5_20251101,
     #[serde(rename = "claude-opus-4-5")]
@@ -127,6 +129,7 @@ mod tests {
     fn test_roundtrip_all_known_variants() {
         let variants = vec![
             (Model::ClaudeOpus4_6, "claude-opus-4-6"),
+            (Model::ClaudeSonnet4_6, "claude-sonnet-4-6"),
             (Model::ClaudeOpus4_5_20251101, "claude-opus-4-5-20251101"),
             (Model::ClaudeOpus4_5, "claude-opus-4-5"),
             (Model::ClaudeOpus4_1_20250805, "claude-opus-4-1-20250805"),

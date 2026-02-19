@@ -75,6 +75,32 @@ impl Message {
                                 },
                             )
                         }
+                        ContentBlock::ContainerUpload(c) => {
+                            ContentBlockParam::ContainerUpload(
+                                super::content::ContainerUploadBlockParam {
+                                    file_id: c.file_id.clone(),
+                                    cache_control: None,
+                                },
+                            )
+                        }
+                        ContentBlock::WebFetchToolResult(w) => {
+                            ContentBlockParam::WebFetchToolResult(
+                                super::content::WebFetchToolResultBlockParam {
+                                    tool_use_id: w.tool_use_id.clone(),
+                                    content: w.content.clone(),
+                                    cache_control: None,
+                                },
+                            )
+                        }
+                        ContentBlock::ToolSearchToolResult(t) => {
+                            ContentBlockParam::ToolSearchToolResult(
+                                super::content::ToolSearchToolResultBlockParam {
+                                    tool_use_id: t.tool_use_id.clone(),
+                                    content: t.content.clone(),
+                                    cache_control: None,
+                                },
+                            )
+                        }
                     })
                     .collect(),
             ),
