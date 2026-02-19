@@ -338,6 +338,8 @@ pub struct ClientBuilder {
     retry_policy: RetryPolicy,
     http_client: Option<reqwest::Client>,
     middlewares: Vec<Box<dyn Middleware>>,
+    proxy_url: Option<String>,
+    accept_invalid_certs: bool,
 }
 
 impl ClientBuilder {
@@ -347,6 +349,8 @@ impl ClientBuilder {
             retry_policy: RetryPolicy::default(),
             http_client: None,
             middlewares: Vec::new(),
+            proxy_url: None,
+            accept_invalid_certs: false,
         }
     }
 
@@ -409,13 +413,38 @@ impl ClientBuilder {
         self
     }
 
+    /// Route all requests through the given proxy URL.
+    ///
+    /// Ignored if a custom `http_client` is provided.
+    pub fn proxy_url(mut self, url: impl Into<String>) -> Self {
+        self.proxy_url = Some(url.into());
+        self
+    }
+
+    /// Disable TLS certificate verification.
+    ///
+    /// **Use only in test environments** (e.g. mitmproxy with a self-signed cert).
+    /// Ignored if a custom `http_client` is provided.
+    pub fn danger_accept_invalid_certs(mut self, accept: bool) -> Self {
+        self.accept_invalid_certs = accept;
+        self
+    }
+
     /// Build the `Client`.
     pub fn build(self) -> Client {
         let http = self.http_client.unwrap_or_else(|| {
-            reqwest::Client::builder()
-                .timeout(self.config.timeout)
-                .build()
-                .expect("failed to build reqwest client")
+            let mut builder = reqwest::Client::builder().timeout(self.config.timeout);
+
+            if let Some(ref proxy_url) = self.proxy_url {
+                builder = builder.proxy(
+                    reqwest::Proxy::all(proxy_url).expect("invalid proxy URL"),
+                );
+            }
+            if self.accept_invalid_certs {
+                builder = builder.danger_accept_invalid_certs(true);
+            }
+
+            builder.build().expect("failed to build reqwest client")
         });
 
         Client {
@@ -474,6 +503,17 @@ mod tests {
         let client = Client::builder().api_key("key").build();
         let cloned = client.clone();
         assert!(Arc::ptr_eq(&client.inner, &cloned.inner));
+    }
+
+    #[test]
+    fn test_client_builder_proxy() {
+        let client = ClientBuilder::new()
+            .api_key("test-key")
+            .proxy_url("http://127.0.0.1:8080")
+            .danger_accept_invalid_certs(true)
+            .build();
+        // Proxy and cert settings are applied during build; verify the client was constructed.
+        assert_eq!(client.inner.config.api_key, "test-key");
     }
 
     #[test]
