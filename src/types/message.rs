@@ -175,12 +175,19 @@ impl From<Vec<ContentBlockParam>> for MessageContent {
     }
 }
 
+/// A tagged text block for use in system content arrays.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum SystemBlock {
+    Text(TextBlockParam),
+}
+
 /// System content: either a plain string or text blocks.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SystemContent {
     Text(String),
-    Blocks(Vec<TextBlockParam>),
+    Blocks(Vec<SystemBlock>),
 }
 
 impl From<&str> for SystemContent {
@@ -197,7 +204,7 @@ impl From<String> for SystemContent {
 
 impl From<Vec<TextBlockParam>> for SystemContent {
     fn from(blocks: Vec<TextBlockParam>) -> Self {
-        SystemContent::Blocks(blocks)
+        SystemContent::Blocks(blocks.into_iter().map(SystemBlock::Text).collect())
     }
 }
 

@@ -361,7 +361,9 @@ fn roundtrip_system_content_text() {
 
 #[test]
 fn roundtrip_system_content_blocks() {
-    let content = SystemContent::Blocks(vec![TextBlockParam::new("System instruction")]);
+    let content = SystemContent::Blocks(vec![SystemBlock::Text(TextBlockParam::new(
+        "System instruction",
+    ))]);
     roundtrip_json(&content);
 }
 
