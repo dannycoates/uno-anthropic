@@ -67,6 +67,28 @@ impl<S: Into<String>> From<S> for Model {
     }
 }
 
+impl Model {
+    /// Parse a model from a string, falling back to `Model::Other(s.to_string())`
+    /// for unknown model IDs.
+    ///
+    /// Short aliases are resolved before parsing:
+    /// - `"sonnet"` → `"claude-sonnet-4-6"`
+    /// - `"opus"`   → `"claude-opus-4-6"`
+    /// - `"haiku"`  → `"claude-haiku-4-5"`
+    pub fn from_str_lossy(s: &str) -> Self {
+        let resolved = match s {
+            "sonnet" => "claude-sonnet-4-6",
+            "opus"   => "claude-opus-4-6",
+            "haiku"  => "claude-haiku-4-5",
+            other    => other,
+        };
+        match serde_json::from_value::<Model>(serde_json::Value::String(resolved.to_string())) {
+            Ok(model) => model,
+            Err(_) => Model::Other(s.to_string()),
+        }
+    }
+}
+
 impl std::fmt::Display for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -93,6 +115,30 @@ pub struct ModelInfo {
     pub display_name: String,
     #[serde(default)]
     pub created_at: Option<String>,
+}
+
+/// A parsed model specification that may include option flags.
+///
+/// Parses strings like `"sonnet"`, `"claude-sonnet-4-6"`, `"sonnet[1m]"`, `"opus[1m]"`.
+/// The `[1m]` suffix enables the 1M-token extended context window.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModelSpec {
+    pub model: Model,
+    pub extended_context: bool,
+}
+
+impl ModelSpec {
+    pub fn parse(s: &str) -> Self {
+        let (base, extended_context) = if let Some(b) = s.strip_suffix("[1m]") {
+            (b, true)
+        } else {
+            (s, false)
+        };
+        ModelSpec {
+            model: Model::from_str_lossy(base),
+            extended_context,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -183,5 +229,41 @@ mod tests {
         assert_eq!(info.model_type, "model");
         assert_eq!(info.display_name, "Claude Opus 4.6");
         assert_eq!(info.created_at.as_deref(), Some("2025-01-01T00:00:00Z"));
+    }
+
+    #[test]
+    fn test_alias_sonnet() {
+        assert_eq!(Model::from_str_lossy("sonnet"), Model::ClaudeSonnet4_6);
+    }
+
+    #[test]
+    fn test_alias_opus() {
+        assert_eq!(Model::from_str_lossy("opus"), Model::ClaudeOpus4_6);
+    }
+
+    #[test]
+    fn test_alias_haiku() {
+        assert_eq!(Model::from_str_lossy("haiku"), Model::ClaudeHaiku4_5);
+    }
+
+    #[test]
+    fn test_model_spec_parse_plain() {
+        let spec = ModelSpec::parse("sonnet");
+        assert_eq!(spec.model, Model::ClaudeSonnet4_6);
+        assert!(!spec.extended_context);
+    }
+
+    #[test]
+    fn test_model_spec_parse_extended() {
+        let spec = ModelSpec::parse("sonnet[1m]");
+        assert_eq!(spec.model, Model::ClaudeSonnet4_6);
+        assert!(spec.extended_context);
+    }
+
+    #[test]
+    fn test_model_spec_parse_full_id_extended() {
+        let spec = ModelSpec::parse("claude-opus-4-6[1m]");
+        assert_eq!(spec.model, Model::ClaudeOpus4_6);
+        assert!(spec.extended_context);
     }
 }

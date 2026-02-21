@@ -13,6 +13,7 @@ pub mod search;
 pub mod page;
 
 pub use model::*;
+pub use model::ModelSpec;
 pub use common::*;
 pub use usage::*;
 pub use metadata::*;

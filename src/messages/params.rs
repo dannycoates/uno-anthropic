@@ -46,6 +46,10 @@ pub struct MessageCreateParams {
     pub service_tier: Option<ServiceTier>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_config: Option<OutputConfig>,
+    /// Beta feature flags sent as the `anthropic-beta` header.
+    /// Not serialized into the JSON body — extracted by the MessageService.
+    #[serde(skip)]
+    pub betas: Option<Vec<String>>,
 }
 
 /// Parameters for counting tokens.
