@@ -18,6 +18,9 @@ pub enum Error {
 
     #[error("Request timed out")]
     Timeout,
+
+    #[error("OAuth error: {0}")]
+    OAuth(String),
 }
 
 /// Wrapper for the `error` field in API error JSON responses.

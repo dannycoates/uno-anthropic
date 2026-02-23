@@ -66,13 +66,16 @@ impl<'a> MessageService<'a> {
     /// Sends a POST request to `/v1/messages` with `"stream": false` injected.
     /// Any `betas` set on `params` are merged into the `anthropic-beta` header.
     pub async fn create(&self, params: MessageCreateParams) -> Result<Message, Error> {
+        let has_betas = params.betas.as_ref().is_some_and(|b| !b.is_empty())
+            || !self.client.inner.config.beta_features.is_empty();
+        let path = if has_betas { "messages?beta=true" } else { "messages" };
         let headers = build_headers(self.extra_headers.as_ref(), params.betas.as_ref());
         let mut body = serde_json::to_value(&params)?;
         if let Some(obj) = body.as_object_mut() {
             obj.insert("stream".to_string(), serde_json::Value::Bool(false));
         }
         self.client
-            .post("messages", &body, headers.as_ref())
+            .post(path, &body, headers.as_ref())
             .await
     }
 
@@ -85,10 +88,13 @@ impl<'a> MessageService<'a> {
         &self,
         params: MessageCreateParams,
     ) -> Result<MessageStream, Error> {
+        let has_betas = params.betas.as_ref().is_some_and(|b| !b.is_empty())
+            || !self.client.inner.config.beta_features.is_empty();
+        let path = if has_betas { "messages?beta=true" } else { "messages" };
         let headers = build_headers(self.extra_headers.as_ref(), params.betas.as_ref());
         let response = self
             .client
-            .execute_streaming("messages", &params, headers.as_ref())
+            .execute_streaming(path, &params, headers.as_ref())
             .await?;
 
         Ok(MessageStream::new(response))
@@ -105,4 +111,61 @@ impl<'a> MessageService<'a> {
             .post("messages/count_tokens", &params, self.extra_headers.as_ref())
             .await
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::client::ClientBuilder;
+    use crate::messages::params::MessageCreateParams;
+    use crate::types::message::MessageParam;
+    use crate::types::model::Model;
+
+    fn base_params() -> MessageCreateParams {
+        MessageCreateParams::builder()
+            .model(Model::ClaudeOpus4_6)
+            .max_tokens(10)
+            .messages(vec![MessageParam::user("hi")])
+            .build()
+    }
+
+    fn params_with_betas(betas: Vec<String>) -> MessageCreateParams {
+        MessageCreateParams::builder()
+            .model(Model::ClaudeOpus4_6)
+            .max_tokens(10)
+            .messages(vec![MessageParam::user("hi")])
+            .betas(betas)
+            .build()
+    }
+
+    fn resolve_create_path(params: &MessageCreateParams, client: &crate::client::Client) -> &'static str {
+        let has_betas = params.betas.as_ref().is_some_and(|b| !b.is_empty())
+            || !client.inner.config.beta_features.is_empty();
+        if has_betas { "messages?beta=true" } else { "messages" }
+    }
+
+
+    #[test]
+    fn test_create_path_with_per_request_betas() {
+        let client = ClientBuilder::new().api_key("test").build();
+        let params = params_with_betas(vec!["feature-x".to_string()]);
+        assert_eq!(resolve_create_path(&params, &client), "messages?beta=true");
+    }
+
+    #[test]
+    fn test_create_path_with_client_level_betas() {
+        let client = ClientBuilder::new()
+            .api_key("test")
+            .beta_features(vec!["interleaved-thinking-2025-05-14".to_string()])
+            .build();
+        let params = base_params();
+        assert_eq!(resolve_create_path(&params, &client), "messages?beta=true");
+    }
+
+    #[test]
+    fn test_create_path_no_betas() {
+        let client = ClientBuilder::new().api_key("test").build();
+        let params = base_params();
+        assert_eq!(resolve_create_path(&params, &client), "messages");
+    }
+
 }

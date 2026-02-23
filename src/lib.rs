@@ -34,6 +34,8 @@ pub mod models;
 
 pub mod beta;
 
+pub mod oauth;
+
 #[cfg(feature = "bedrock")]
 pub mod bedrock;
 
@@ -44,4 +46,5 @@ pub mod vertex;
 pub use client::Client;
 pub use error::Error;
 pub use messages::params::{CountTokensParams, MessageCreateParams};
+pub use oauth::{OAuthConfig, OAuthTokens};
 pub use types::*;
