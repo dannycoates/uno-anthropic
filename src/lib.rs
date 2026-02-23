@@ -43,7 +43,7 @@ pub mod bedrock;
 pub mod vertex;
 
 // Re-export key types at crate root for ergonomic imports.
-pub use client::Client;
+pub use client::{Client, ClientBuilder};
 pub use error::Error;
 pub use messages::params::{CountTokensParams, MessageCreateParams};
 pub use oauth::{OAuthConfig, OAuthTokens};
