@@ -22,30 +22,30 @@ use crate::types::tool::{ToolChoice, ToolDefinition};
 #[derive(Debug, Clone, Serialize, bon::Builder)]
 pub struct MessageCreateParams {
     pub model: Model,
-    pub max_tokens: u32,
     pub messages: Vec<MessageParam>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system: Option<SystemContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_k: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stop_sequences: Option<Vec<String>>,
+    pub tools: Option<Vec<ToolDefinition>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    pub max_tokens: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thinking: Option<ThinkingConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_choice: Option<ToolChoice>,
+    pub temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Vec<ToolDefinition>>,
+    pub output_config: Option<OutputConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub service_tier: Option<ServiceTier>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub output_config: Option<OutputConfig>,
+    pub stop_sequences: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_choice: Option<ToolChoice>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_k: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f64>,
     /// Beta feature flags sent as the `anthropic-beta` header.
     /// Not serialized into the JSON body — extracted by the MessageService.
     #[serde(skip)]
