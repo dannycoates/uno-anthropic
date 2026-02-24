@@ -433,7 +433,9 @@ impl ClientBuilder {
     /// Build the `Client`.
     pub fn build(self) -> Client {
         let http = self.http_client.unwrap_or_else(|| {
-            let mut builder = reqwest::Client::builder().timeout(self.config.timeout);
+            let mut builder = reqwest::Client::builder()
+                .timeout(self.config.timeout)
+                .tcp_keepalive(std::time::Duration::from_secs(60));
 
             if let Some(ref proxy_url) = self.proxy_url {
                 builder = builder.proxy(

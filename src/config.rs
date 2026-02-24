@@ -49,6 +49,10 @@ impl ClientConfig {
             reqwest::header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
         );
+        headers.insert(
+            reqwest::header::ACCEPT,
+            HeaderValue::from_static("application/json"),
+        );
         if let Ok(val) = HeaderValue::from_str(&self.user_agent) {
             headers.insert(reqwest::header::USER_AGENT, val);
         }
