@@ -144,7 +144,7 @@ pub struct WebFetchToolResultBlock {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum WebFetchToolResultContent {
-    WebFetchResult(WebFetchBlock),
+    WebFetchResult(Box<WebFetchBlock>),
     WebFetchToolResultError(WebFetchToolResultErrorBlock),
 }
 
