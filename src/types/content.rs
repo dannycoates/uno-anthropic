@@ -142,18 +142,37 @@ pub struct WebFetchToolResultBlock {
 
 /// Content of a web fetch tool result: either a fetched page or an error.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum WebFetchToolResultContent {
-    Success(WebFetchBlock),
-    Error(WebFetchToolResultErrorBlock),
+    WebFetchResult(WebFetchBlock),
+    WebFetchToolResultError(WebFetchToolResultErrorBlock),
 }
 
 /// A successful web fetch result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebFetchBlock {
     pub url: String,
-    pub content: DocumentSource,
-    pub retrieved_at: String,
+    pub content: WebFetchDocument,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub retrieved_at: Option<String>,
+}
+
+/// A document returned from a web fetch result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchDocument {
+    #[serde(rename = "type", default = "WebFetchDocument::default_type")]
+    pub document_type: String,
+    pub source: DocumentSource,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub citations: Option<serde_json::Value>,
+}
+
+impl WebFetchDocument {
+    fn default_type() -> String {
+        "document".to_string()
+    }
 }
 
 /// An error from a web fetch tool request.

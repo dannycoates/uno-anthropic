@@ -19,7 +19,9 @@ pub enum ToolDefinition {
     TextEditor20250728(TextEditorTool728),
     WebSearch(WebSearchTool),
     WebSearch20260209(WebSearchTool20260209),
+    WebFetch20250910(WebFetchTool20250910),
     WebFetch20260209(WebFetchTool20260209),
+    CodeExecution(CodeExecutionTool),
     Custom(Tool),
 }
 
@@ -62,10 +64,20 @@ impl<'de> Deserialize<'de> for ToolDefinition {
                     serde_json::from_value(value).map_err(serde::de::Error::custom)?;
                 Ok(ToolDefinition::WebSearch20260209(tool))
             }
+            Some("web_fetch_20250910") => {
+                let tool: WebFetchTool20250910 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::WebFetch20250910(tool))
+            }
             Some("web_fetch_20260209") => {
                 let tool: WebFetchTool20260209 =
                     serde_json::from_value(value).map_err(serde::de::Error::custom)?;
                 Ok(ToolDefinition::WebFetch20260209(tool))
+            }
+            Some("code_execution_20250825") => {
+                let tool: CodeExecutionTool =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::CodeExecution(tool))
             }
             _ => {
                 // No type or unrecognized type -> Custom tool
@@ -245,7 +257,7 @@ impl WebSearchTool {
     pub fn new() -> Self {
         Self {
             tool_type: "web_search_20250305".to_string(),
-            name: "WebSearch".to_string(),
+            name: "web_search".to_string(),
             max_uses: None,
             allowed_domains: None,
             blocked_domains: None,
@@ -310,6 +322,57 @@ impl Default for WebSearchTool20260209 {
     }
 }
 
+/// A web fetch server tool (2025-09-10 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchTool20250910 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_content_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defer_loading: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strict: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blocked_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_callers: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub citations: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl WebFetchTool20250910 {
+    /// Create a new web fetch tool (2025-09-10) with defaults.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "web_fetch_20250910".to_string(),
+            name: "web_fetch".to_string(),
+            max_content_tokens: None,
+            max_uses: None,
+            defer_loading: None,
+            strict: None,
+            allowed_domains: None,
+            blocked_domains: None,
+            allowed_callers: None,
+            citations: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for WebFetchTool20250910 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// A web fetch server tool (2026-02-09 version).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebFetchTool20260209 {
@@ -331,6 +394,8 @@ pub struct WebFetchTool20260209 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allowed_callers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub citations: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
 }
 
@@ -347,12 +412,43 @@ impl WebFetchTool20260209 {
             allowed_domains: None,
             blocked_domains: None,
             allowed_callers: None,
+            citations: None,
             cache_control: None,
         }
     }
 }
 
 impl Default for WebFetchTool20260209 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A code execution server tool.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionTool {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl CodeExecutionTool {
+    /// Create a new code execution tool with defaults.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "code_execution_20250825".to_string(),
+            name: "code_execution".to_string(),
+            max_uses: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for CodeExecutionTool {
     fn default() -> Self {
         Self::new()
     }
@@ -532,7 +628,7 @@ mod tests {
         });
         let json = serde_json::to_string(&tool).unwrap();
         assert!(json.contains(r#""type":"web_search_20250305""#));
-        assert!(json.contains(r#""name":"WebSearch""#));
+        assert!(json.contains(r#""name":"web_search""#));
         assert!(json.contains(r#""max_uses":5"#));
         assert!(json.contains(r#""allowed_domains":["example.com"]"#));
     }

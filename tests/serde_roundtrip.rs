@@ -874,12 +874,15 @@ fn roundtrip_content_block_container_upload() {
 
 #[test]
 fn roundtrip_content_block_web_fetch_tool_result_success() {
-    let json = r#"{"type":"web_fetch_tool_result","tool_use_id":"stu_1","content":{"url":"https://example.com","content":{"type":"text","media_type":"text/plain","data":"Hello"},"retrieved_at":"2026-02-18T00:00:00Z"}}"#;
+    let json = r#"{"type":"web_fetch_tool_result","tool_use_id":"stu_1","content":{"type":"web_fetch_result","url":"https://example.com","content":{"type":"document","source":{"type":"text","media_type":"text/plain","data":"Hello"},"title":"Example Page"},"retrieved_at":"2026-02-18T00:00:00Z"}}"#;
     let block: ContentBlock = serde_json::from_str(json).unwrap();
     match &block {
         ContentBlock::WebFetchToolResult(w) => {
             assert_eq!(w.tool_use_id, "stu_1");
-            assert!(matches!(w.content, WebFetchToolResultContent::Success(_)));
+            assert!(matches!(
+                w.content,
+                WebFetchToolResultContent::WebFetchResult(_)
+            ));
         }
         _ => panic!("Expected WebFetchToolResult"),
     }
@@ -889,13 +892,13 @@ fn roundtrip_content_block_web_fetch_tool_result_success() {
 
 #[test]
 fn roundtrip_content_block_web_fetch_tool_result_error() {
-    let json = r#"{"type":"web_fetch_tool_result","tool_use_id":"stu_2","content":{"error_code":"url_not_accessible"}}"#;
+    let json = r#"{"type":"web_fetch_tool_result","tool_use_id":"stu_2","content":{"type":"web_fetch_tool_result_error","error_code":"url_not_accessible"}}"#;
     let block: ContentBlock = serde_json::from_str(json).unwrap();
     match &block {
         ContentBlock::WebFetchToolResult(w) => {
             assert_eq!(w.tool_use_id, "stu_2");
             match &w.content {
-                WebFetchToolResultContent::Error(e) => {
+                WebFetchToolResultContent::WebFetchToolResultError(e) => {
                     assert_eq!(e.error_code, WebFetchToolResultErrorCode::UrlNotAccessible)
                 }
                 _ => panic!("Expected Error content"),
