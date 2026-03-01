@@ -71,6 +71,42 @@ impl Model {
     /// Parse a model from a string, falling back to `Model::Other(s.to_string())`
     /// for unknown model IDs.
     ///
+    /// Returns whether this model supports extended thinking.
+    ///
+    /// Models that don't support thinking will have thinking config stripped
+    /// before API calls to prevent `invalid_request_error` responses.
+    pub fn supports_extended_thinking(&self) -> bool {
+        match self {
+            // Claude 4.x Opus and Sonnet support extended thinking
+            Model::ClaudeOpus4_6
+            | Model::ClaudeOpus4_5_20251101
+            | Model::ClaudeOpus4_5
+            | Model::ClaudeOpus4_1_20250805
+            | Model::ClaudeOpus4_0
+            | Model::ClaudeOpus4_20250514
+            | Model::Claude4Opus20250514
+            | Model::ClaudeSonnet4_6
+            | Model::ClaudeSonnet4_5
+            | Model::ClaudeSonnet4_5_20250929
+            | Model::ClaudeSonnet4_0
+            | Model::ClaudeSonnet4_20250514
+            | Model::Claude4Sonnet20250514
+            // Claude 3.7 Sonnet supports extended thinking
+            | Model::Claude3_7SonnetLatest
+            | Model::Claude3_7Sonnet20250219 => true,
+            // Haiku and older Claude 3.x models don't support extended thinking
+            Model::ClaudeHaiku4_5
+            | Model::ClaudeHaiku4_5_20251001
+            | Model::Claude3_5HaikuLatest
+            | Model::Claude3_5Haiku20241022
+            | Model::Claude3OpusLatest
+            | Model::Claude3Opus20240229
+            | Model::Claude3Haiku20240307 => false,
+            // Unknown models: allow optimistically (API will reject if unsupported)
+            Model::Other(_) => true,
+        }
+    }
+
     /// Short aliases are resolved before parsing:
     /// - `"sonnet"` → `"claude-sonnet-4-6"`
     /// - `"opus"`   → `"claude-opus-4-6"`
@@ -244,6 +280,46 @@ mod tests {
     #[test]
     fn test_alias_haiku() {
         assert_eq!(Model::from_str_lossy("haiku"), Model::ClaudeHaiku4_5);
+    }
+
+    #[test]
+    fn test_supports_extended_thinking_opus() {
+        assert!(Model::ClaudeOpus4_6.supports_extended_thinking());
+        assert!(Model::ClaudeOpus4_5.supports_extended_thinking());
+        assert!(Model::ClaudeOpus4_0.supports_extended_thinking());
+    }
+
+    #[test]
+    fn test_supports_extended_thinking_sonnet() {
+        assert!(Model::ClaudeSonnet4_6.supports_extended_thinking());
+        assert!(Model::ClaudeSonnet4_5.supports_extended_thinking());
+        assert!(Model::ClaudeSonnet4_0.supports_extended_thinking());
+    }
+
+    #[test]
+    fn test_supports_extended_thinking_3_7_sonnet() {
+        assert!(Model::Claude3_7SonnetLatest.supports_extended_thinking());
+        assert!(Model::Claude3_7Sonnet20250219.supports_extended_thinking());
+    }
+
+    #[test]
+    fn test_no_extended_thinking_haiku() {
+        assert!(!Model::ClaudeHaiku4_5.supports_extended_thinking());
+        assert!(!Model::ClaudeHaiku4_5_20251001.supports_extended_thinking());
+        assert!(!Model::Claude3_5HaikuLatest.supports_extended_thinking());
+        assert!(!Model::Claude3_5Haiku20241022.supports_extended_thinking());
+        assert!(!Model::Claude3Haiku20240307.supports_extended_thinking());
+    }
+
+    #[test]
+    fn test_no_extended_thinking_claude3_opus() {
+        assert!(!Model::Claude3OpusLatest.supports_extended_thinking());
+        assert!(!Model::Claude3Opus20240229.supports_extended_thinking());
+    }
+
+    #[test]
+    fn test_extended_thinking_unknown_model_optimistic() {
+        assert!(Model::Other("future-model".to_string()).supports_extended_thinking());
     }
 
     #[test]

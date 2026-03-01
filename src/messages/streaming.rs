@@ -191,9 +191,9 @@ impl MessageStream {
                     if let Some(json_str) = partial_json_bufs.remove(&idx)
                         && idx < content_blocks.len()
                         && let ContentBlock::ToolUse(ref mut tool_use) = content_blocks[idx]
+                        && let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str)
                     {
-                        tool_use.input = serde_json::from_str(&json_str)
-                            .unwrap_or(serde_json::Value::String(json_str));
+                        tool_use.input = parsed;
                     }
                 }
                 StreamEvent::MessageDelta { delta, usage } => {
