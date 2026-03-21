@@ -13,8 +13,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Bedrock uses its own model ID format, not the standard Anthropic identifiers.
     // Cross-region IDs use the "us." (or region) prefix.
-    let model_id =
-        std::env::var("BEDROCK_MODEL_ID").unwrap_or_else(|_| "us.anthropic.claude-haiku-4-5-20251001-v1:0".into());
+    let model_id = std::env::var("BEDROCK_MODEL_ID")
+        .unwrap_or_else(|_| "us.anthropic.claude-haiku-4-5-20251001-v1:0".into());
 
     let content = "Hello from Bedrock! What's your name and how are you today?";
     println!("[user]: {content}");

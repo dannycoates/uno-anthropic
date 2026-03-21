@@ -68,15 +68,17 @@ impl<'a> MessageService<'a> {
     pub async fn create(&self, params: MessageCreateParams) -> Result<Message, Error> {
         let has_betas = params.betas.as_ref().is_some_and(|b| !b.is_empty())
             || !self.client.inner.config.beta_features.is_empty();
-        let path = if has_betas { "messages?beta=true" } else { "messages" };
+        let path = if has_betas {
+            "messages?beta=true"
+        } else {
+            "messages"
+        };
         let headers = build_headers(self.extra_headers.as_ref(), params.betas.as_ref());
         let mut body = serde_json::to_value(&params)?;
         if let Some(obj) = body.as_object_mut() {
             obj.insert("stream".to_string(), serde_json::Value::Bool(false));
         }
-        self.client
-            .post(path, &body, headers.as_ref())
-            .await
+        self.client.post(path, &body, headers.as_ref()).await
     }
 
     /// Create a streaming message.
@@ -84,13 +86,14 @@ impl<'a> MessageService<'a> {
     /// Sends a POST request to `/v1/messages` with `"stream": true` injected.
     /// Returns a `MessageStream` that yields `StreamEvent` items.
     /// Any `betas` set on `params` are merged into the `anthropic-beta` header.
-    pub async fn create_stream(
-        &self,
-        params: MessageCreateParams,
-    ) -> Result<MessageStream, Error> {
+    pub async fn create_stream(&self, params: MessageCreateParams) -> Result<MessageStream, Error> {
         let has_betas = params.betas.as_ref().is_some_and(|b| !b.is_empty())
             || !self.client.inner.config.beta_features.is_empty();
-        let path = if has_betas { "messages?beta=true" } else { "messages" };
+        let path = if has_betas {
+            "messages?beta=true"
+        } else {
+            "messages"
+        };
         let headers = build_headers(self.extra_headers.as_ref(), params.betas.as_ref());
         let response = self
             .client
@@ -108,7 +111,11 @@ impl<'a> MessageService<'a> {
         params: CountTokensParams,
     ) -> Result<CountTokensResponse, Error> {
         self.client
-            .post("messages/count_tokens", &params, self.extra_headers.as_ref())
+            .post(
+                "messages/count_tokens",
+                &params,
+                self.extra_headers.as_ref(),
+            )
             .await
     }
 }
@@ -137,12 +144,18 @@ mod tests {
             .build()
     }
 
-    fn resolve_create_path(params: &MessageCreateParams, client: &crate::client::Client) -> &'static str {
+    fn resolve_create_path(
+        params: &MessageCreateParams,
+        client: &crate::client::Client,
+    ) -> &'static str {
         let has_betas = params.betas.as_ref().is_some_and(|b| !b.is_empty())
             || !client.inner.config.beta_features.is_empty();
-        if has_betas { "messages?beta=true" } else { "messages" }
+        if has_betas {
+            "messages?beta=true"
+        } else {
+            "messages"
+        }
     }
-
 
     #[test]
     fn test_create_path_with_per_request_betas() {
@@ -167,5 +180,4 @@ mod tests {
         let params = base_params();
         assert_eq!(resolve_create_path(&params, &client), "messages");
     }
-
 }

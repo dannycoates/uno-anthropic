@@ -478,7 +478,8 @@ mod tests {
 
     #[test]
     fn test_content_block_tool_use() {
-        let json = r#"{"type":"tool_use","id":"tu_123","name":"get_weather","input":{"location":"SF"}}"#;
+        let json =
+            r#"{"type":"tool_use","id":"tu_123","name":"get_weather","input":{"location":"SF"}}"#;
         let block: ContentBlock = serde_json::from_str(json).unwrap();
         match block {
             ContentBlock::ToolUse(t) => {

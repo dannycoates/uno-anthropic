@@ -25,7 +25,8 @@ pub const BETA_CODE_EXECUTION_2025_05_22: &str = "code-execution-2025-05-22";
 pub const BETA_EXTENDED_CACHE_TTL_2025_04_11: &str = "extended-cache-ttl-2025-04-11";
 pub const BETA_CONTEXT_MANAGEMENT_2025_06_27: &str = "context-management-2025-06-27";
 pub const BETA_CONTEXT_1M_2025_08_07: &str = "context-1m-2025-08-07";
-pub const BETA_MODEL_CONTEXT_WINDOW_EXCEEDED_2025_08_26: &str = "model-context-window-exceeded-2025-08-26";
+pub const BETA_MODEL_CONTEXT_WINDOW_EXCEEDED_2025_08_26: &str =
+    "model-context-window-exceeded-2025-08-26";
 pub const BETA_SKILLS_2025_10_02: &str = "skills-2025-10-02";
 pub const BETA_FAST_MODE_2026_02_01: &str = "fast-mode-2026-02-01";
 pub const BETA_ADAPTIVE_THINKING_2026_01_28: &str = "adaptive-thinking-2026-01-28";
@@ -110,10 +111,7 @@ impl<'a> BetaMessageService<'a> {
     }
 
     /// Create a streaming message with beta features enabled.
-    pub async fn create_stream(
-        &self,
-        params: MessageCreateParams,
-    ) -> Result<MessageStream, Error> {
+    pub async fn create_stream(&self, params: MessageCreateParams) -> Result<MessageStream, Error> {
         let service = match self.beta_headers() {
             Some(headers) => MessageService::with_extra_headers(self.client, headers),
             None => MessageService::new(self.client),

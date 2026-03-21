@@ -44,7 +44,10 @@ impl ClientConfig {
     pub fn build_headers(&self) -> HeaderMap {
         let mut headers = HeaderMap::new();
 
-        headers.insert("anthropic-version", HeaderValue::from_static(DEFAULT_ANTHROPIC_VERSION));
+        headers.insert(
+            "anthropic-version",
+            HeaderValue::from_static(DEFAULT_ANTHROPIC_VERSION),
+        );
         headers.insert(
             reqwest::header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
@@ -57,7 +60,9 @@ impl ClientConfig {
             headers.insert(reqwest::header::USER_AGENT, val);
         }
 
-        if !self.api_key.is_empty() && let Ok(val) = HeaderValue::from_str(&self.api_key) {
+        if !self.api_key.is_empty()
+            && let Ok(val) = HeaderValue::from_str(&self.api_key)
+        {
             headers.insert("x-api-key", val);
         }
 

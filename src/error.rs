@@ -8,7 +8,13 @@ pub enum Error {
     Http(#[from] reqwest::Error),
 
     #[error("API error (status {status}): {body}")]
-    Api { status: u16, body: ApiErrorBody },
+    Api {
+        status: u16,
+        body: ApiErrorBody,
+        /// The `retry-after` duration from the response headers, if present.
+        /// Parsed from `retry-after-ms` (milliseconds) or `retry-after` (seconds).
+        retry_after: Option<std::time::Duration>,
+    },
 
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
@@ -44,6 +50,15 @@ impl std::fmt::Display for ApiErrorBody {
 }
 
 impl Error {
+    /// Returns the `retry-after` duration from the response headers, if this
+    /// is an API error that included one.
+    pub fn retry_after(&self) -> Option<std::time::Duration> {
+        match self {
+            Error::Api { retry_after, .. } => *retry_after,
+            _ => None,
+        }
+    }
+
     /// Returns `true` if this error is retryable based on the HTTP status code
     /// and error type. Retryable statuses: 408, 409, 429, 5xx.
     pub fn is_retryable(&self) -> bool {
@@ -110,8 +125,10 @@ mod tests {
                 error_type: "rate_limit_error".to_string(),
                 message: "Rate limited".to_string(),
             },
+            retry_after: Some(std::time::Duration::from_secs(5)),
         };
         assert!(err.is_retryable());
+        assert_eq!(err.retry_after(), Some(std::time::Duration::from_secs(5)));
 
         let err = Error::Api {
             status: 400,
@@ -119,8 +136,10 @@ mod tests {
                 error_type: "invalid_request_error".to_string(),
                 message: "Bad request".to_string(),
             },
+            retry_after: None,
         };
         assert!(!err.is_retryable());
+        assert_eq!(err.retry_after(), None);
     }
 
     #[test]

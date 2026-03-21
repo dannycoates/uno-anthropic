@@ -114,9 +114,9 @@ impl Model {
     pub fn from_str_lossy(s: &str) -> Self {
         let resolved = match s {
             "sonnet" => "claude-sonnet-4-6",
-            "opus"   => "claude-opus-4-6",
-            "haiku"  => "claude-haiku-4-5",
-            other    => other,
+            "opus" => "claude-opus-4-6",
+            "haiku" => "claude-haiku-4-5",
+            other => other,
         };
         match serde_json::from_value::<Model>(serde_json::Value::String(resolved.to_string())) {
             Ok(model) => model,
@@ -219,7 +219,10 @@ mod tests {
             (Model::ClaudeOpus4_20250514, "claude-opus-4-20250514"),
             (Model::Claude4Opus20250514, "claude-4-opus-20250514"),
             (Model::ClaudeSonnet4_5, "claude-sonnet-4-5"),
-            (Model::ClaudeSonnet4_5_20250929, "claude-sonnet-4-5-20250929"),
+            (
+                Model::ClaudeSonnet4_5_20250929,
+                "claude-sonnet-4-5-20250929",
+            ),
             (Model::ClaudeSonnet4_0, "claude-sonnet-4-0"),
             (Model::ClaudeSonnet4_20250514, "claude-sonnet-4-20250514"),
             (Model::Claude4Sonnet20250514, "claude-4-sonnet-20250514"),
@@ -246,10 +249,7 @@ mod tests {
     #[test]
     fn test_display() {
         assert_eq!(Model::ClaudeOpus4_6.to_string(), "claude-opus-4-6");
-        assert_eq!(
-            Model::Other("my-model".to_string()).to_string(),
-            "my-model"
-        );
+        assert_eq!(Model::Other("my-model".to_string()).to_string(), "my-model");
     }
 
     #[test]

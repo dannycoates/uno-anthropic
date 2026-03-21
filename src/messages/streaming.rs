@@ -1,8 +1,8 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures::stream::Stream;
 use futures::StreamExt;
+use futures::stream::Stream;
 use pin_project_lite::pin_project;
 use serde::Deserialize;
 
@@ -83,11 +83,17 @@ fn parse_stream_event(raw: RawSseEvent) -> Result<StreamEvent, Error> {
         .map_err(|e| Error::StreamError(format!("Failed to parse SSE data as JSON: {e}")))?;
 
     if let Some(obj) = value.as_object_mut() {
-        obj.insert("type".to_string(), serde_json::Value::String(event_type.to_string()));
+        obj.insert(
+            "type".to_string(),
+            serde_json::Value::String(event_type.to_string()),
+        );
     }
 
-    let event: StreamEvent = serde_json::from_value(value)
-        .map_err(|e| Error::StreamError(format!("Failed to deserialize stream event '{event_type}': {e}")))?;
+    let event: StreamEvent = serde_json::from_value(value).map_err(|e| {
+        Error::StreamError(format!(
+            "Failed to deserialize stream event '{event_type}': {e}"
+        ))
+    })?;
 
     Ok(event)
 }
@@ -107,11 +113,9 @@ impl MessageStream {
     /// Create a new `MessageStream` from a raw reqwest Response.
     pub fn new(response: reqwest::Response) -> Self {
         let sse_stream = parse_sse_stream(response);
-        let event_stream = sse_stream.map(|result| {
-            match result {
-                Ok(raw) => parse_stream_event(raw),
-                Err(e) => Err(e),
-            }
+        let event_stream = sse_stream.map(|result| match result {
+            Ok(raw) => parse_stream_event(raw),
+            Err(e) => Err(e),
         });
 
         Self {
@@ -168,7 +172,10 @@ impl MessageStream {
                 StreamEvent::MessageStart { message: msg } => {
                     message = Some(msg.clone());
                 }
-                StreamEvent::ContentBlockStart { index, content_block } => {
+                StreamEvent::ContentBlockStart {
+                    index,
+                    content_block,
+                } => {
                     let idx = *index as usize;
                     // Ensure the vec is large enough
                     while content_blocks.len() <= idx {
@@ -256,7 +263,10 @@ fn apply_delta(
         (ContentBlock::Thinking(thinking_block), ContentBlockDelta::ThinkingDelta { thinking }) => {
             thinking_block.thinking.push_str(thinking);
         }
-        (ContentBlock::Thinking(thinking_block), ContentBlockDelta::SignatureDelta { signature }) => {
+        (
+            ContentBlock::Thinking(thinking_block),
+            ContentBlockDelta::SignatureDelta { signature },
+        ) => {
             thinking_block.signature.push_str(signature);
         }
         (ContentBlock::ToolUse(_), ContentBlockDelta::InputJsonDelta { partial_json }) => {
@@ -287,7 +297,10 @@ mod tests {
         match event {
             StreamEvent::MessageStart { message } => {
                 assert_eq!(message.id, "msg_123");
-                assert!(matches!(message.role, crate::types::common::Role::Assistant));
+                assert!(matches!(
+                    message.role,
+                    crate::types::common::Role::Assistant
+                ));
             }
             _ => panic!("Expected MessageStart"),
         }

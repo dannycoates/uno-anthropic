@@ -1,7 +1,7 @@
 use futures::stream::Stream;
 use tokio::io::AsyncBufReadExt;
-use tokio_stream::wrappers::LinesStream;
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::LinesStream;
 
 use crate::error::Error;
 
@@ -65,17 +65,15 @@ pub fn parse_sse_stream(
                                 "event" => {
                                     current.event = Some(value.to_string());
                                 }
-                                "data" => {
-                                    match &mut current.data {
-                                        Some(existing) => {
-                                            existing.push('\n');
-                                            existing.push_str(value);
-                                        }
-                                        None => {
-                                            current.data = Some(value.to_string());
-                                        }
+                                "data" => match &mut current.data {
+                                    Some(existing) => {
+                                        existing.push('\n');
+                                        existing.push_str(value);
                                     }
-                                }
+                                    None => {
+                                        current.data = Some(value.to_string());
+                                    }
+                                },
                                 "id" => {
                                     current.id = Some(value.to_string());
                                 }
@@ -163,11 +161,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_parse_sse_stream_basic() {
-        let body = "event: message_start\ndata: {\"type\":\"message_start\"}\n\nevent: ping\ndata: {}\n\n";
-        let response = http::Response::builder()
-            .status(200)
-            .body(body)
-            .unwrap();
+        let body =
+            "event: message_start\ndata: {\"type\":\"message_start\"}\n\nevent: ping\ndata: {}\n\n";
+        let response = http::Response::builder().status(200).body(body).unwrap();
         let response = reqwest::Response::from(response);
 
         let events: Vec<_> = futures::StreamExt::collect::<Vec<_>>(parse_sse_stream(response))
@@ -178,7 +174,10 @@ mod tests {
 
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].event.as_deref(), Some("message_start"));
-        assert_eq!(events[0].data.as_deref(), Some("{\"type\":\"message_start\"}"));
+        assert_eq!(
+            events[0].data.as_deref(),
+            Some("{\"type\":\"message_start\"}")
+        );
         assert_eq!(events[1].event.as_deref(), Some("ping"));
         assert_eq!(events[1].data.as_deref(), Some("{}"));
     }
@@ -186,10 +185,7 @@ mod tests {
     #[tokio::test]
     async fn test_parse_sse_stream_multiline_data() {
         let body = "event: test\ndata: line1\ndata: line2\ndata: line3\n\n";
-        let response = http::Response::builder()
-            .status(200)
-            .body(body)
-            .unwrap();
+        let response = http::Response::builder().status(200).body(body).unwrap();
         let response = reqwest::Response::from(response);
 
         let events: Vec<_> = futures::StreamExt::collect::<Vec<_>>(parse_sse_stream(response))
@@ -205,10 +201,7 @@ mod tests {
     #[tokio::test]
     async fn test_parse_sse_stream_comments_skipped() {
         let body = ": this is a comment\nevent: ping\ndata: {}\n\n";
-        let response = http::Response::builder()
-            .status(200)
-            .body(body)
-            .unwrap();
+        let response = http::Response::builder().status(200).body(body).unwrap();
         let response = reqwest::Response::from(response);
 
         let events: Vec<_> = futures::StreamExt::collect::<Vec<_>>(parse_sse_stream(response))
@@ -224,10 +217,7 @@ mod tests {
     #[tokio::test]
     async fn test_parse_sse_stream_empty_lines_between_events() {
         let body = "\n\nevent: a\ndata: 1\n\n\n\nevent: b\ndata: 2\n\n";
-        let response = http::Response::builder()
-            .status(200)
-            .body(body)
-            .unwrap();
+        let response = http::Response::builder().status(200).body(body).unwrap();
         let response = reqwest::Response::from(response);
 
         let events: Vec<_> = futures::StreamExt::collect::<Vec<_>>(parse_sse_stream(response))

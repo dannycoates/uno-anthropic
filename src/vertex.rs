@@ -136,10 +136,7 @@ impl Middleware for VertexMiddleware {
                             .and_then(|v| v.as_str().map(|s| s.to_string()))
                             .unwrap_or_default();
 
-                        let stream = obj
-                            .get("stream")
-                            .and_then(|v| v.as_bool())
-                            .unwrap_or(false);
+                        let stream = obj.get("stream").and_then(|v| v.as_bool()).unwrap_or(false);
 
                         let specifier = if stream {
                             "streamRawPredict"
@@ -169,8 +166,7 @@ impl Middleware for VertexMiddleware {
                 }
 
                 // Set the modified body
-                let new_body =
-                    serde_json::to_vec(&body).map_err(Error::Serialization)?;
+                let new_body = serde_json::to_vec(&body).map_err(Error::Serialization)?;
                 *request.body_mut() = Some(reqwest::Body::from(new_body));
             }
 

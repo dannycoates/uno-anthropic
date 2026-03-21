@@ -2,8 +2,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use reqwest::header::HeaderMap;
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use tracing::{debug, warn};
 
 use crate::config::ClientConfig;
@@ -78,7 +78,9 @@ impl Client {
         body: &impl Serialize,
         extra_headers: Option<&HeaderMap>,
     ) -> Result<T, Error> {
-        let bytes = self.execute_raw("POST", path, Some(body), extra_headers).await?;
+        let bytes = self
+            .execute_raw("POST", path, Some(body), extra_headers)
+            .await?;
         let result = serde_json::from_slice(&bytes)?;
         Ok(result)
     }
@@ -89,7 +91,9 @@ impl Client {
         path: &str,
         extra_headers: Option<&HeaderMap>,
     ) -> Result<T, Error> {
-        let bytes = self.execute_raw("GET", path, None::<&()>, extra_headers).await?;
+        let bytes = self
+            .execute_raw("GET", path, None::<&()>, extra_headers)
+            .await?;
         let result = serde_json::from_slice(&bytes)?;
         Ok(result)
     }
@@ -100,7 +104,9 @@ impl Client {
         path: &str,
         extra_headers: Option<&HeaderMap>,
     ) -> Result<T, Error> {
-        let bytes = self.execute_raw("DELETE", path, None::<&()>, extra_headers).await?;
+        let bytes = self
+            .execute_raw("DELETE", path, None::<&()>, extra_headers)
+            .await?;
         let result = serde_json::from_slice(&bytes)?;
         Ok(result)
     }
@@ -116,16 +122,19 @@ impl Client {
         extra_headers: Option<&HeaderMap>,
     ) -> Result<bytes::Bytes, Error> {
         let inner = &self.inner;
-        let url = format!("{}/v1/{}", inner.config.base_url.trim_end_matches('/'), path.trim_start_matches('/'));
+        let url = format!(
+            "{}/v1/{}",
+            inner.config.base_url.trim_end_matches('/'),
+            path.trim_start_matches('/')
+        );
         let headers = inner.config.build_headers();
 
         let max_retries = inner.retry_policy.max_retries;
 
         for attempt in 0..=max_retries {
-            let mut request = inner.http.request(
-                method.parse().unwrap_or(reqwest::Method::GET),
-                &url,
-            );
+            let mut request = inner
+                .http
+                .request(method.parse().unwrap_or(reqwest::Method::GET), &url);
 
             request = request.headers(headers.clone());
 
@@ -149,9 +158,7 @@ impl Client {
                     &inner.middlewares,
                     req,
                     move |r| -> BoxFuture<'_, Result<reqwest::Response, Error>> {
-                        Box::pin(async move {
-                            http.execute(r).await.map_err(Error::Http)
-                        })
+                        Box::pin(async move { http.execute(r).await.map_err(Error::Http) })
                     },
                 )
                 .await
@@ -191,6 +198,7 @@ impl Client {
                         return Err(Error::Api {
                             status,
                             body: error_body,
+                            retry_after,
                         });
                     }
 
@@ -227,7 +235,11 @@ impl Client {
         extra_headers: Option<&HeaderMap>,
     ) -> Result<reqwest::Response, Error> {
         let inner = &self.inner;
-        let url = format!("{}/v1/{}", inner.config.base_url.trim_end_matches('/'), path.trim_start_matches('/'));
+        let url = format!(
+            "{}/v1/{}",
+            inner.config.base_url.trim_end_matches('/'),
+            path.trim_start_matches('/')
+        );
         let headers = inner.config.build_headers();
 
         // Serialize to Value and inject "stream": true
@@ -260,9 +272,7 @@ impl Client {
                     &inner.middlewares,
                     req,
                     move |r| -> BoxFuture<'_, Result<reqwest::Response, Error>> {
-                        Box::pin(async move {
-                            http.execute(r).await.map_err(Error::Http)
-                        })
+                        Box::pin(async move { http.execute(r).await.map_err(Error::Http) })
                     },
                 )
                 .await
@@ -300,6 +310,7 @@ impl Client {
                         return Err(Error::Api {
                             status,
                             body: error_body,
+                            retry_after,
                         });
                     }
 
@@ -438,9 +449,7 @@ impl ClientBuilder {
                 .tcp_keepalive(std::time::Duration::from_secs(60));
 
             if let Some(ref proxy_url) = self.proxy_url {
-                builder = builder.proxy(
-                    reqwest::Proxy::all(proxy_url).expect("invalid proxy URL"),
-                );
+                builder = builder.proxy(reqwest::Proxy::all(proxy_url).expect("invalid proxy URL"));
             }
             if self.accept_invalid_certs {
                 builder = builder.danger_accept_invalid_certs(true);
@@ -472,9 +481,7 @@ mod tests {
 
     #[test]
     fn test_client_builder_defaults() {
-        let client = ClientBuilder::new()
-            .api_key("test-key")
-            .build();
+        let client = ClientBuilder::new().api_key("test-key").build();
         assert_eq!(client.inner.config.api_key, "test-key");
         assert_eq!(client.inner.config.base_url, "https://api.anthropic.com");
         assert_eq!(client.inner.retry_policy.max_retries, 2);

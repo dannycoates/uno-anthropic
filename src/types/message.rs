@@ -5,7 +5,7 @@ use super::content::{ContentBlock, ContentBlockParam, TextBlockParam};
 use super::usage::Usage;
 
 /// A message response from the API.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message {
     pub id: String,
     #[serde(rename = "type")]
@@ -48,24 +48,20 @@ impl Message {
                                 cache_control: None,
                             })
                         }
-                        ContentBlock::RedactedThinking(r) => {
-                            ContentBlockParam::RedactedThinking(
-                                super::content::RedactedThinkingBlockParam {
-                                    data: r.data.clone(),
-                                    cache_control: None,
-                                },
-                            )
-                        }
-                        ContentBlock::ServerToolUse(s) => {
-                            ContentBlockParam::ServerToolUse(
-                                super::content::ServerToolUseBlockParam {
-                                    id: s.id.clone(),
-                                    name: s.name.clone(),
-                                    input: s.input.clone(),
-                                    cache_control: None,
-                                },
-                            )
-                        }
+                        ContentBlock::RedactedThinking(r) => ContentBlockParam::RedactedThinking(
+                            super::content::RedactedThinkingBlockParam {
+                                data: r.data.clone(),
+                                cache_control: None,
+                            },
+                        ),
+                        ContentBlock::ServerToolUse(s) => ContentBlockParam::ServerToolUse(
+                            super::content::ServerToolUseBlockParam {
+                                id: s.id.clone(),
+                                name: s.name.clone(),
+                                input: s.input.clone(),
+                                cache_control: None,
+                            },
+                        ),
                         ContentBlock::WebSearchToolResult(w) => {
                             ContentBlockParam::WebSearchToolResult(
                                 super::content::WebSearchToolResultBlockParam {
@@ -75,14 +71,12 @@ impl Message {
                                 },
                             )
                         }
-                        ContentBlock::ContainerUpload(c) => {
-                            ContentBlockParam::ContainerUpload(
-                                super::content::ContainerUploadBlockParam {
-                                    file_id: c.file_id.clone(),
-                                    cache_control: None,
-                                },
-                            )
-                        }
+                        ContentBlock::ContainerUpload(c) => ContentBlockParam::ContainerUpload(
+                            super::content::ContainerUploadBlockParam {
+                                file_id: c.file_id.clone(),
+                                cache_control: None,
+                            },
+                        ),
                         ContentBlock::WebFetchToolResult(w) => {
                             ContentBlockParam::WebFetchToolResult(
                                 super::content::WebFetchToolResultBlockParam {

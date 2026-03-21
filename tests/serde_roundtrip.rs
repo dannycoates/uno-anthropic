@@ -218,7 +218,8 @@ fn roundtrip_content_block_redacted_thinking() {
 
 #[test]
 fn roundtrip_content_block_tool_use() {
-    let json = r#"{"type":"tool_use","id":"toolu_123","name":"get_weather","input":{"location":"SF"}}"#;
+    let json =
+        r#"{"type":"tool_use","id":"toolu_123","name":"get_weather","input":{"location":"SF"}}"#;
     let block: ContentBlock = serde_json::from_str(json).unwrap();
     let reserialized = serde_json::to_string(&block).unwrap();
     let _: ContentBlock = serde_json::from_str(&reserialized).unwrap();
@@ -340,8 +341,7 @@ fn roundtrip_message_content_text() {
 
 #[test]
 fn roundtrip_message_content_blocks() {
-    let content =
-        MessageContent::Blocks(vec![ContentBlockParam::Text(TextBlockParam::new("Hi"))]);
+    let content = MessageContent::Blocks(vec![ContentBlockParam::Text(TextBlockParam::new("Hi"))]);
     roundtrip_json(&content);
 }
 
@@ -406,10 +406,7 @@ fn text_citation_variant_dispatch() {
         r#"{"type":"web_search_result_location","cited_text":"d","encrypted_index":"e","title":null,"url":"https://x.com"}"#,
     )
     .unwrap();
-    assert!(matches!(
-        web_loc,
-        TextCitation::WebSearchResultLocation(_)
-    ));
+    assert!(matches!(web_loc, TextCitation::WebSearchResultLocation(_)));
 
     let search_loc: TextCitation = serde_json::from_str(
         r#"{"type":"search_result_location","cited_text":"e","document_index":0,"document_title":null,"start_char_index":0,"end_char_index":1}"#
@@ -743,12 +740,24 @@ fn roundtrip_user_location() {
 #[test]
 fn roundtrip_web_search_tool_result_error_code_all_variants() {
     let variants = vec![
-        (WebSearchToolResultErrorCode::InvalidToolInput, "invalid_tool_input"),
+        (
+            WebSearchToolResultErrorCode::InvalidToolInput,
+            "invalid_tool_input",
+        ),
         (WebSearchToolResultErrorCode::Unavailable, "unavailable"),
-        (WebSearchToolResultErrorCode::MaxUsesExceeded, "max_uses_exceeded"),
-        (WebSearchToolResultErrorCode::TooManyRequests, "too_many_requests"),
+        (
+            WebSearchToolResultErrorCode::MaxUsesExceeded,
+            "max_uses_exceeded",
+        ),
+        (
+            WebSearchToolResultErrorCode::TooManyRequests,
+            "too_many_requests",
+        ),
         (WebSearchToolResultErrorCode::QueryTooLong, "query_too_long"),
-        (WebSearchToolResultErrorCode::RequestTooLarge, "request_too_large"),
+        (
+            WebSearchToolResultErrorCode::RequestTooLarge,
+            "request_too_large",
+        ),
     ];
     for (variant, expected_str) in variants {
         let json = serde_json::to_string(&variant).unwrap();
@@ -763,13 +772,31 @@ fn roundtrip_web_search_tool_result_error_code_all_variants() {
 #[test]
 fn roundtrip_web_fetch_tool_result_error_code_all_variants() {
     let variants = vec![
-        (WebFetchToolResultErrorCode::InvalidToolInput, "invalid_tool_input"),
+        (
+            WebFetchToolResultErrorCode::InvalidToolInput,
+            "invalid_tool_input",
+        ),
         (WebFetchToolResultErrorCode::UrlTooLong, "url_too_long"),
-        (WebFetchToolResultErrorCode::UrlNotAllowed, "url_not_allowed"),
-        (WebFetchToolResultErrorCode::UrlNotAccessible, "url_not_accessible"),
-        (WebFetchToolResultErrorCode::UnsupportedContentType, "unsupported_content_type"),
-        (WebFetchToolResultErrorCode::TooManyRequests, "too_many_requests"),
-        (WebFetchToolResultErrorCode::MaxUsesExceeded, "max_uses_exceeded"),
+        (
+            WebFetchToolResultErrorCode::UrlNotAllowed,
+            "url_not_allowed",
+        ),
+        (
+            WebFetchToolResultErrorCode::UrlNotAccessible,
+            "url_not_accessible",
+        ),
+        (
+            WebFetchToolResultErrorCode::UnsupportedContentType,
+            "unsupported_content_type",
+        ),
+        (
+            WebFetchToolResultErrorCode::TooManyRequests,
+            "too_many_requests",
+        ),
+        (
+            WebFetchToolResultErrorCode::MaxUsesExceeded,
+            "max_uses_exceeded",
+        ),
         (WebFetchToolResultErrorCode::Unavailable, "unavailable"),
     ];
     for (variant, expected_str) in variants {
@@ -785,10 +812,19 @@ fn roundtrip_web_fetch_tool_result_error_code_all_variants() {
 #[test]
 fn roundtrip_tool_search_tool_result_error_code_all_variants() {
     let variants = vec![
-        (ToolSearchToolResultErrorCode::InvalidToolInput, "invalid_tool_input"),
+        (
+            ToolSearchToolResultErrorCode::InvalidToolInput,
+            "invalid_tool_input",
+        ),
         (ToolSearchToolResultErrorCode::Unavailable, "unavailable"),
-        (ToolSearchToolResultErrorCode::TooManyRequests, "too_many_requests"),
-        (ToolSearchToolResultErrorCode::ExecutionTimeExceeded, "execution_time_exceeded"),
+        (
+            ToolSearchToolResultErrorCode::TooManyRequests,
+            "too_many_requests",
+        ),
+        (
+            ToolSearchToolResultErrorCode::ExecutionTimeExceeded,
+            "execution_time_exceeded",
+        ),
     ];
     for (variant, expected_str) in variants {
         let json = serde_json::to_string(&variant).unwrap();

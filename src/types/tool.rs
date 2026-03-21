@@ -81,8 +81,7 @@ impl<'de> Deserialize<'de> for ToolDefinition {
             }
             _ => {
                 // No type or unrecognized type -> Custom tool
-                let tool: Tool =
-                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                let tool: Tool = serde_json::from_value(value).map_err(serde::de::Error::custom)?;
                 Ok(ToolDefinition::Custom(tool))
             }
         }

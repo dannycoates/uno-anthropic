@@ -8,17 +8,28 @@ pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 /// Represents the next handler in the middleware chain.
 #[derive(Clone)]
 pub struct Next<'a> {
-    inner: Arc<dyn Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>> + Send + Sync + 'a>,
+    inner: Arc<
+        dyn Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>>
+            + Send
+            + Sync
+            + 'a,
+    >,
 }
 
 impl<'a> Next<'a> {
     pub fn new(
-        f: impl Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>> + Send + Sync + 'a,
+        f: impl Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>>
+        + Send
+        + Sync
+        + 'a,
     ) -> Self {
         Self { inner: Arc::new(f) }
     }
 
-    pub fn run(&self, request: reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>> {
+    pub fn run(
+        &self,
+        request: reqwest::Request,
+    ) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>> {
         (self.inner)(request)
     }
 }
@@ -39,7 +50,10 @@ pub trait Middleware: Send + Sync {
 pub fn execute_middleware_chain<'a>(
     middlewares: &'a [Box<dyn Middleware>],
     request: reqwest::Request,
-    handler: impl Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>> + Send + Sync + 'a,
+    handler: impl Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>>
+    + Send
+    + Sync
+    + 'a,
 ) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>> {
     if middlewares.is_empty() {
         return handler(request);
@@ -52,7 +66,10 @@ pub fn execute_middleware_chain<'a>(
 /// Recursively build the middleware chain from the inside out.
 fn build_chain<'a>(
     middlewares: &'a [Box<dyn Middleware>],
-    handler: impl Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>> + Send + Sync + 'a,
+    handler: impl Fn(reqwest::Request) -> BoxFuture<'a, Result<reqwest::Response, crate::error::Error>>
+    + Send
+    + Sync
+    + 'a,
 ) -> Next<'a> {
     if middlewares.is_empty() {
         return Next::new(handler);
@@ -105,8 +122,11 @@ mod tests {
             })
         };
 
-        let req = reqwest::Request::new(reqwest::Method::GET, "https://example.com".parse().unwrap());
-        let resp = execute_middleware_chain(&middlewares, req, handler).await.unwrap();
+        let req =
+            reqwest::Request::new(reqwest::Method::GET, "https://example.com".parse().unwrap());
+        let resp = execute_middleware_chain(&middlewares, req, handler)
+            .await
+            .unwrap();
         assert_eq!(resp.status(), 200);
     }
 
@@ -130,8 +150,11 @@ mod tests {
             })
         };
 
-        let req = reqwest::Request::new(reqwest::Method::GET, "https://example.com".parse().unwrap());
-        let resp = execute_middleware_chain(&middlewares, req, handler).await.unwrap();
+        let req =
+            reqwest::Request::new(reqwest::Method::GET, "https://example.com".parse().unwrap());
+        let resp = execute_middleware_chain(&middlewares, req, handler)
+            .await
+            .unwrap();
         assert_eq!(resp.status(), 200);
     }
 }

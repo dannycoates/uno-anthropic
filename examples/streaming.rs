@@ -1,9 +1,9 @@
 use futures::StreamExt;
 
+use uno_anthropic::Client;
 use uno_anthropic::messages::params::MessageCreateParams;
 use uno_anthropic::messages::streaming::{ContentBlockDelta, StreamEvent};
 use uno_anthropic::types::{MessageParam, Model};
-use uno_anthropic::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -33,7 +33,9 @@ impl RetryPolicy {
     /// precedence as long as it is reasonable (< 60 seconds).
     pub fn delay_for_attempt(&self, attempt: u32, retry_after: Option<Duration>) -> Duration {
         // If the server told us to wait and it's reasonable, use that
-        if let Some(ra) = retry_after && ra < Duration::from_secs(60) {
+        if let Some(ra) = retry_after
+            && ra < Duration::from_secs(60)
+        {
             return ra;
         }
 
@@ -69,7 +71,9 @@ pub fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<Duratio
     }
 
     // Check Retry-After (seconds or HTTP-date)
-    if let Some(val) = headers.get("retry-after") && let Ok(s) = val.to_str() {
+    if let Some(val) = headers.get("retry-after")
+        && let Ok(s) = val.to_str()
+    {
         // Try parsing as number of seconds
         if let Ok(secs) = s.parse::<f64>() {
             return Some(Duration::from_secs_f64(secs));
@@ -87,9 +91,9 @@ pub fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<Duratio
 ///
 /// Returns `Some(true)` if the header says "true", `Some(false)` if "false", `None` if absent.
 pub fn check_should_retry_header(headers: &reqwest::header::HeaderMap) -> Option<bool> {
-    headers.get("x-should-retry").and_then(|val| {
-        val.to_str().ok().map(|s| s.eq_ignore_ascii_case("true"))
-    })
+    headers
+        .get("x-should-retry")
+        .and_then(|val| val.to_str().ok().map(|s| s.eq_ignore_ascii_case("true")))
 }
 
 #[cfg(test)]

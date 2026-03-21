@@ -173,9 +173,7 @@ impl OAuthTokenManager {
         } else {
             let code = status.as_u16();
             if code == 401 || code == 403 {
-                Err(Error::OAuth(
-                    "refresh token invalid or revoked".to_string(),
-                ))
+                Err(Error::OAuth("refresh token invalid or revoked".to_string()))
             } else {
                 Err(Error::OAuth(format!(
                     "token refresh failed with status {code}"
@@ -378,10 +376,7 @@ mod tests {
     #[test]
     fn test_apply_oauth_headers_removes_api_key_adds_bearer() {
         let client = reqwest::Client::new();
-        let mut req = client
-            .get("https://example.com")
-            .build()
-            .unwrap();
+        let mut req = client.get("https://example.com").build().unwrap();
         req.headers_mut()
             .insert("x-api-key", HeaderValue::from_static("old-key"));
 
@@ -411,10 +406,7 @@ mod tests {
         let client = reqwest::Client::new();
         let req = client.get("https://example.com").build().unwrap();
         let req = apply_oauth_headers(req, "tok").unwrap();
-        assert_eq!(
-            req.headers().get("anthropic-beta").unwrap(),
-            OAUTH_BETA
-        );
+        assert_eq!(req.headers().get("anthropic-beta").unwrap(), OAUTH_BETA);
     }
 
     #[test]
@@ -424,7 +416,12 @@ mod tests {
         req.headers_mut()
             .insert("anthropic-beta", HeaderValue::from_static("other-beta"));
         let req = apply_oauth_headers(req, "tok").unwrap();
-        let beta = req.headers().get("anthropic-beta").unwrap().to_str().unwrap();
+        let beta = req
+            .headers()
+            .get("anthropic-beta")
+            .unwrap()
+            .to_str()
+            .unwrap();
         assert!(beta.contains("other-beta"));
         assert!(beta.contains(OAUTH_BETA));
     }
@@ -436,7 +433,12 @@ mod tests {
         req.headers_mut()
             .insert("anthropic-beta", HeaderValue::from_static(OAUTH_BETA));
         let req = apply_oauth_headers(req, "tok").unwrap();
-        let beta = req.headers().get("anthropic-beta").unwrap().to_str().unwrap();
+        let beta = req
+            .headers()
+            .get("anthropic-beta")
+            .unwrap()
+            .to_str()
+            .unwrap();
         // Should not appear twice
         assert_eq!(beta.matches(OAUTH_BETA).count(), 1);
     }
@@ -454,10 +456,11 @@ mod tests {
         // the internal update logic that on_refresh would exercise.
         // Here we verify OAuthConfig::on_refresh stores the callback correctly.
         let tokens = make_tokens(u64::MAX);
-        let config = OAuthConfig::new(tokens, "client-id", "https://example.com/token")
-            .on_refresh(move |t| {
-            *captured2.lock().unwrap() = Some(t.access_token.clone());
-        });
+        let config = OAuthConfig::new(tokens, "client-id", "https://example.com/token").on_refresh(
+            move |t| {
+                *captured2.lock().unwrap() = Some(t.access_token.clone());
+            },
+        );
         assert!(config.on_refresh.is_some());
 
         // Invoke the stored callback directly to verify it captures correctly
@@ -480,8 +483,8 @@ mod tests {
         let tokens = make_tokens(u64::MAX);
         let _config = OAuthConfig::new(tokens, "client-id", "https://example.com/token")
             .on_refresh(move |_| {
-            counter2.fetch_add(1, Ordering::SeqCst);
-        });
+                counter2.fetch_add(1, Ordering::SeqCst);
+            });
         // callback wiring verified — actual invocation tested in integration tests
         assert_eq!(counter.load(Ordering::SeqCst), 0);
     }

@@ -79,7 +79,10 @@ impl<'a> BatchService<'a> {
         let path = format!("messages/batches/{}/results", batch_id);
 
         // Execute a raw GET and get the response body as a byte stream
-        let bytes = self.client.execute_raw("GET", &path, None::<&()>, None).await?;
+        let bytes = self
+            .client
+            .execute_raw("GET", &path, None::<&()>, None)
+            .await?;
 
         // Parse JSONL: each line is a JSON object
         let lines = String::from_utf8_lossy(&bytes).to_string();

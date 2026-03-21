@@ -1,7 +1,7 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Token usage information returned with a message response.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Usage {
     pub input_tokens: u32,
     pub output_tokens: u32,
@@ -14,14 +14,14 @@ pub struct Usage {
 }
 
 /// Usage information specific to server tool use.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ServerToolUsage {
     #[serde(default)]
     pub web_search_requests: Option<u32>,
 }
 
 /// Usage information in a `message_delta` streaming event.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MessageDeltaUsage {
     pub output_tokens: u32,
 }

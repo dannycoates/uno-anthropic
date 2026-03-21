@@ -1,10 +1,10 @@
+use uno_anthropic::Client;
 use uno_anthropic::messages::params::MessageCreateParams;
+use uno_anthropic::types::Model;
+use uno_anthropic::types::content::ToolResultContent;
 use uno_anthropic::types::content::{ContentBlock, ContentBlockParam, ToolResultBlockParam};
 use uno_anthropic::types::message::{MessageContent, MessageParam};
-use uno_anthropic::types::content::ToolResultContent;
 use uno_anthropic::types::tool::{Tool, ToolDefinition, ToolInputSchema};
-use uno_anthropic::types::Model;
-use uno_anthropic::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -72,15 +72,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let ContentBlock::ToolUse(tool_use) = block {
                 // Simulate tool execution
                 let result = match tool_use.name.as_str() {
-                    "get_weather" => {
-                        serde_json::json!({
-                            "temperature": "72",
-                            "unit": "fahrenheit",
-                            "conditions": "Partly cloudy",
-                            "location": "San Francisco, CA"
-                        })
-                        .to_string()
-                    }
+                    "get_weather" => serde_json::json!({
+                        "temperature": "72",
+                        "unit": "fahrenheit",
+                        "conditions": "Partly cloudy",
+                        "location": "San Francisco, CA"
+                    })
+                    .to_string(),
                     _ => "Unknown tool".to_string(),
                 };
 

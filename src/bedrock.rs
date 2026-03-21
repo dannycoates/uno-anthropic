@@ -124,10 +124,7 @@ impl Middleware for BedrockMiddleware {
                             .unwrap_or_default();
 
                         // Determine invoke method based on stream field
-                        let stream = obj
-                            .get("stream")
-                            .and_then(|v| v.as_bool())
-                            .unwrap_or(false);
+                        let stream = obj.get("stream").and_then(|v| v.as_bool()).unwrap_or(false);
                         obj.remove("stream");
 
                         let invoke_method = if stream {
@@ -145,8 +142,7 @@ impl Middleware for BedrockMiddleware {
                 }
 
                 // Set the modified body
-                let new_body =
-                    serde_json::to_vec(&body).map_err(Error::Serialization)?;
+                let new_body = serde_json::to_vec(&body).map_err(Error::Serialization)?;
                 *request.body_mut() = Some(reqwest::Body::from(new_body.clone()));
 
                 // Remove x-api-key header (Bedrock uses SigV4)
@@ -198,13 +194,11 @@ impl Middleware for BedrockMiddleware {
 
                 // Apply signing headers
                 for (name, value) in signing_instructions.headers() {
-                    let header_name: reqwest::header::HeaderName =
-                        name.parse().map_err(|e| {
-                            Error::StreamError(format!("Invalid header name: {}", e))
-                        })?;
-                    let header_value = HeaderValue::from_str(value).map_err(|e| {
-                        Error::StreamError(format!("Invalid header value: {}", e))
-                    })?;
+                    let header_name: reqwest::header::HeaderName = name
+                        .parse()
+                        .map_err(|e| Error::StreamError(format!("Invalid header name: {}", e)))?;
+                    let header_value = HeaderValue::from_str(value)
+                        .map_err(|e| Error::StreamError(format!("Invalid header value: {}", e)))?;
                     request.headers_mut().insert(header_name, header_value);
                 }
             }
