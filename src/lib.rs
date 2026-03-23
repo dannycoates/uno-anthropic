@@ -30,7 +30,9 @@ pub mod messages;
 pub mod streaming;
 
 pub mod batches;
+pub mod files;
 pub mod models;
+pub mod skills;
 
 pub mod beta;
 

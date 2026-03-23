@@ -6,6 +6,13 @@ use serde::{Deserialize, Serialize};
 pub enum ImageSource {
     Base64(Base64ImageSource),
     Url(UrlImageSource),
+    File(FileImageSource),
+}
+
+/// A file-based image source (references a previously uploaded file).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileImageSource {
+    pub file_id: String,
 }
 
 /// A base64-encoded image source.
@@ -69,6 +76,21 @@ mod tests {
         match deserialized {
             ImageSource::Url(u) => assert_eq!(u.url, "https://example.com/image.png"),
             _ => panic!("Expected Url variant"),
+        }
+    }
+
+    #[test]
+    fn test_file_image_source_roundtrip() {
+        let source = ImageSource::File(FileImageSource {
+            file_id: "file_abc123".to_string(),
+        });
+        let json = serde_json::to_string(&source).unwrap();
+        assert!(json.contains(r#""type":"file""#));
+        assert!(json.contains(r#""file_id":"file_abc123""#));
+        let deserialized: ImageSource = serde_json::from_str(&json).unwrap();
+        match deserialized {
+            ImageSource::File(f) => assert_eq!(f.file_id, "file_abc123"),
+            _ => panic!("Expected File variant"),
         }
     }
 

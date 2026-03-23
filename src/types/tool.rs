@@ -14,6 +14,8 @@ use super::search::UserLocation;
 #[serde(untagged)]
 pub enum ToolDefinition {
     Bash(BashTool),
+    Bash20241022(BashTool20241022),
+    TextEditor20241022(TextEditorTool20241022),
     TextEditor20250124(TextEditorTool),
     TextEditor20250429(TextEditorTool429),
     TextEditor20250728(TextEditorTool728),
@@ -21,7 +23,17 @@ pub enum ToolDefinition {
     WebSearch20260209(WebSearchTool20260209),
     WebFetch20250910(WebFetchTool20250910),
     WebFetch20260209(WebFetchTool20260209),
+    WebFetch20260309(WebFetchTool20260309),
     CodeExecution(CodeExecutionTool),
+    CodeExecution20250522(CodeExecutionTool20250522),
+    CodeExecution20260120(CodeExecutionTool20260120),
+    ComputerUse20241022(ComputerTool20241022),
+    ComputerUse20250124(ComputerTool20250124),
+    ComputerUse20251124(ComputerTool20251124),
+    Memory(MemoryTool),
+    ToolSearchBm25(ToolSearchBm25Tool),
+    ToolSearchRegex(ToolSearchRegexTool),
+    McpToolset(McpToolset),
     Custom(Tool),
 }
 
@@ -34,10 +46,20 @@ impl<'de> Deserialize<'de> for ToolDefinition {
         let type_field = value.get("type").and_then(|v| v.as_str());
 
         match type_field {
+            Some("bash_20241022") => {
+                let tool: BashTool20241022 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::Bash20241022(tool))
+            }
             Some("bash_20250124") => {
                 let tool: BashTool =
                     serde_json::from_value(value).map_err(serde::de::Error::custom)?;
                 Ok(ToolDefinition::Bash(tool))
+            }
+            Some("text_editor_20241022") => {
+                let tool: TextEditorTool20241022 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::TextEditor20241022(tool))
             }
             Some("text_editor_20250124") => {
                 let tool: TextEditorTool =
@@ -74,10 +96,60 @@ impl<'de> Deserialize<'de> for ToolDefinition {
                     serde_json::from_value(value).map_err(serde::de::Error::custom)?;
                 Ok(ToolDefinition::WebFetch20260209(tool))
             }
+            Some("web_fetch_20260309") => {
+                let tool: WebFetchTool20260309 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::WebFetch20260309(tool))
+            }
+            Some("code_execution_20250522") => {
+                let tool: CodeExecutionTool20250522 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::CodeExecution20250522(tool))
+            }
             Some("code_execution_20250825") => {
                 let tool: CodeExecutionTool =
                     serde_json::from_value(value).map_err(serde::de::Error::custom)?;
                 Ok(ToolDefinition::CodeExecution(tool))
+            }
+            Some("code_execution_20260120") => {
+                let tool: CodeExecutionTool20260120 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::CodeExecution20260120(tool))
+            }
+            Some("computer_20241022") => {
+                let tool: ComputerTool20241022 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::ComputerUse20241022(tool))
+            }
+            Some("computer_20250124") => {
+                let tool: ComputerTool20250124 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::ComputerUse20250124(tool))
+            }
+            Some("computer_20251124") => {
+                let tool: ComputerTool20251124 =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::ComputerUse20251124(tool))
+            }
+            Some("memory_20250818") => {
+                let tool: MemoryTool =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::Memory(tool))
+            }
+            Some("tool_search_bm25_20251119") => {
+                let tool: ToolSearchBm25Tool =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::ToolSearchBm25(tool))
+            }
+            Some("tool_search_regex_20251119") => {
+                let tool: ToolSearchRegexTool =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::ToolSearchRegex(tool))
+            }
+            Some("mcp") => {
+                let tool: McpToolset =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(ToolDefinition::McpToolset(tool))
             }
             _ => {
                 // No type or unrecognized type -> Custom tool
@@ -453,15 +525,399 @@ impl Default for CodeExecutionTool {
     }
 }
 
+/// A Bash server tool (2024-10-22 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BashTool20241022 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl BashTool20241022 {
+    /// Create a new Bash tool (2024-10-22 version).
+    pub fn new() -> Self {
+        Self {
+            tool_type: "bash_20241022".to_string(),
+            name: "bash".to_string(),
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for BashTool20241022 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A text editor server tool (2024-10-22 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextEditorTool20241022 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl TextEditorTool20241022 {
+    /// Create a new text editor tool (2024-10-22).
+    pub fn new() -> Self {
+        Self {
+            tool_type: "text_editor_20241022".to_string(),
+            name: "str_replace_editor".to_string(),
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for TextEditorTool20241022 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A web fetch server tool (2026-03-09 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebFetchTool20260309 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_content_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defer_loading: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strict: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blocked_domains: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_callers: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub citations: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl WebFetchTool20260309 {
+    /// Create a new web fetch tool (2026-03-09) with defaults.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "web_fetch_20260309".to_string(),
+            name: "web_fetch".to_string(),
+            max_content_tokens: None,
+            max_uses: None,
+            defer_loading: None,
+            strict: None,
+            allowed_domains: None,
+            blocked_domains: None,
+            allowed_callers: None,
+            citations: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for WebFetchTool20260309 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A code execution server tool (2025-05-22 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionTool20250522 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl CodeExecutionTool20250522 {
+    /// Create a new code execution tool (2025-05-22) with defaults.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "code_execution_20250522".to_string(),
+            name: "code_execution".to_string(),
+            max_uses: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for CodeExecutionTool20250522 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A code execution server tool (2026-01-20 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionTool20260120 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl CodeExecutionTool20260120 {
+    /// Create a new code execution tool (2026-01-20) with defaults.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "code_execution_20260120".to_string(),
+            name: "code_execution".to_string(),
+            max_uses: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for CodeExecutionTool20260120 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A computer use tool (2024-10-22 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComputerTool20241022 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    pub display_width_px: u32,
+    pub display_height_px: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_number: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl ComputerTool20241022 {
+    /// Create a new computer use tool (2024-10-22).
+    pub fn new(display_width_px: u32, display_height_px: u32) -> Self {
+        Self {
+            tool_type: "computer_20241022".to_string(),
+            name: "computer".to_string(),
+            display_width_px,
+            display_height_px,
+            display_number: None,
+            cache_control: None,
+        }
+    }
+}
+
+/// A computer use tool (2025-01-24 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComputerTool20250124 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    pub display_width_px: u32,
+    pub display_height_px: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_number: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl ComputerTool20250124 {
+    /// Create a new computer use tool (2025-01-24).
+    pub fn new(display_width_px: u32, display_height_px: u32) -> Self {
+        Self {
+            tool_type: "computer_20250124".to_string(),
+            name: "computer".to_string(),
+            display_width_px,
+            display_height_px,
+            display_number: None,
+            cache_control: None,
+        }
+    }
+}
+
+/// A computer use tool (2025-11-24 version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComputerTool20251124 {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    pub display_width_px: u32,
+    pub display_height_px: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_number: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl ComputerTool20251124 {
+    /// Create a new computer use tool (2025-11-24).
+    pub fn new(display_width_px: u32, display_height_px: u32) -> Self {
+        Self {
+            tool_type: "computer_20251124".to_string(),
+            name: "computer".to_string(),
+            display_width_px,
+            display_height_px,
+            display_number: None,
+            cache_control: None,
+        }
+    }
+}
+
+/// A memory server tool.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryTool {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl MemoryTool {
+    /// Create a new memory tool.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "memory_20250818".to_string(),
+            name: "memory".to_string(),
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for MemoryTool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A tool search tool definition (BM25 variant).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchBm25Tool {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_results: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl ToolSearchBm25Tool {
+    /// Create a new BM25 tool search tool definition.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "tool_search_bm25_20251119".to_string(),
+            name: "tool_search".to_string(),
+            max_results: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for ToolSearchBm25Tool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A tool search tool definition (Regex variant).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSearchRegexTool {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_results: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl ToolSearchRegexTool {
+    /// Create a new Regex tool search tool definition.
+    pub fn new() -> Self {
+        Self {
+            tool_type: "tool_search_regex_20251119".to_string(),
+            name: "tool_search".to_string(),
+            max_results: None,
+            cache_control: None,
+        }
+    }
+}
+
+impl Default for ToolSearchRegexTool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Tool configuration for MCP toolsets.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpToolConfiguration {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_tools: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enabled: Option<bool>,
+}
+
+/// An MCP (Model Context Protocol) toolset definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpToolset {
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    pub server_label: String,
+    pub server_url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allowed_tools: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_configuration: Option<McpToolConfiguration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+impl McpToolset {
+    /// Create a new MCP toolset.
+    pub fn new(server_label: impl Into<String>, server_url: impl Into<String>) -> Self {
+        Self {
+            tool_type: "mcp".to_string(),
+            server_label: server_label.into(),
+            server_url: server_url.into(),
+            allowed_tools: None,
+            tool_configuration: None,
+            cache_control: None,
+        }
+    }
+}
+
 /// How the model should choose which tool to use.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ToolChoice {
-    Auto,
-    Any,
+    Auto {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        disable_parallel_tool_use: Option<bool>,
+    },
+    Any {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        disable_parallel_tool_use: Option<bool>,
+    },
     None,
-    Tool { name: String },
+    Tool {
+        name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        disable_parallel_tool_use: Option<bool>,
+    },
 }
 
 #[cfg(test)]
@@ -470,19 +926,33 @@ mod tests {
 
     #[test]
     fn test_tool_choice_auto() {
-        let choice = ToolChoice::Auto;
+        let choice = ToolChoice::Auto {
+            disable_parallel_tool_use: None,
+        };
         let json = serde_json::to_string(&choice).unwrap();
         assert_eq!(json, r#"{"type":"auto"}"#);
         let roundtrip: ToolChoice = serde_json::from_str(&json).unwrap();
         match roundtrip {
-            ToolChoice::Auto => {}
+            ToolChoice::Auto { .. } => {}
             _ => panic!("Expected Auto variant"),
         }
     }
 
     #[test]
+    fn test_tool_choice_auto_disable_parallel() {
+        let choice = ToolChoice::Auto {
+            disable_parallel_tool_use: Some(true),
+        };
+        let json = serde_json::to_string(&choice).unwrap();
+        assert!(json.contains(r#""type":"auto""#));
+        assert!(json.contains(r#""disable_parallel_tool_use":true"#));
+    }
+
+    #[test]
     fn test_tool_choice_any() {
-        let choice = ToolChoice::Any;
+        let choice = ToolChoice::Any {
+            disable_parallel_tool_use: None,
+        };
         let json = serde_json::to_string(&choice).unwrap();
         assert_eq!(json, r#"{"type":"any"}"#);
     }
@@ -498,13 +968,14 @@ mod tests {
     fn test_tool_choice_tool() {
         let choice = ToolChoice::Tool {
             name: "get_weather".to_string(),
+            disable_parallel_tool_use: None,
         };
         let json = serde_json::to_string(&choice).unwrap();
         assert!(json.contains(r#""type":"tool""#));
         assert!(json.contains(r#""name":"get_weather""#));
         let roundtrip: ToolChoice = serde_json::from_str(&json).unwrap();
         match roundtrip {
-            ToolChoice::Tool { name } => assert_eq!(name, "get_weather"),
+            ToolChoice::Tool { name, .. } => assert_eq!(name, "get_weather"),
             _ => panic!("Expected Tool variant"),
         }
     }
@@ -675,10 +1146,23 @@ mod tests {
     fn test_tool_definition_roundtrip_all_variants() {
         let tools: Vec<ToolDefinition> = vec![
             ToolDefinition::Bash(BashTool::new()),
+            ToolDefinition::Bash20241022(BashTool20241022::new()),
+            ToolDefinition::TextEditor20241022(TextEditorTool20241022::new()),
             ToolDefinition::TextEditor20250124(TextEditorTool::new()),
             ToolDefinition::TextEditor20250429(TextEditorTool429::new()),
             ToolDefinition::TextEditor20250728(TextEditorTool728::new()),
             ToolDefinition::WebSearch(WebSearchTool::new()),
+            ToolDefinition::WebFetch20260309(WebFetchTool20260309::new()),
+            ToolDefinition::CodeExecution(CodeExecutionTool::new()),
+            ToolDefinition::CodeExecution20250522(CodeExecutionTool20250522::new()),
+            ToolDefinition::CodeExecution20260120(CodeExecutionTool20260120::new()),
+            ToolDefinition::ComputerUse20241022(ComputerTool20241022::new(1920, 1080)),
+            ToolDefinition::ComputerUse20250124(ComputerTool20250124::new(1920, 1080)),
+            ToolDefinition::ComputerUse20251124(ComputerTool20251124::new(1920, 1080)),
+            ToolDefinition::Memory(MemoryTool::new()),
+            ToolDefinition::ToolSearchBm25(ToolSearchBm25Tool::new()),
+            ToolDefinition::ToolSearchRegex(ToolSearchRegexTool::new()),
+            ToolDefinition::McpToolset(McpToolset::new("test-server", "https://mcp.example.com")),
             ToolDefinition::Custom(Tool {
                 name: "test".to_string(),
                 input_schema: ToolInputSchema {
@@ -713,16 +1197,114 @@ mod tests {
     #[test]
     fn test_tool_choice_roundtrip_all() {
         let choices = vec![
-            ToolChoice::Auto,
-            ToolChoice::Any,
+            ToolChoice::Auto {
+                disable_parallel_tool_use: None,
+            },
+            ToolChoice::Any {
+                disable_parallel_tool_use: None,
+            },
             ToolChoice::None,
             ToolChoice::Tool {
                 name: "test".to_string(),
+                disable_parallel_tool_use: None,
             },
         ];
         for choice in choices {
             let json = serde_json::to_string(&choice).unwrap();
             let _roundtrip: ToolChoice = serde_json::from_str(&json).unwrap();
         }
+    }
+
+    #[test]
+    fn test_computer_tool_serialize() {
+        let tool = ToolDefinition::ComputerUse20241022(ComputerTool20241022::new(1920, 1080));
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"computer_20241022""#));
+        assert!(json.contains(r#""display_width_px":1920"#));
+        assert!(json.contains(r#""display_height_px":1080"#));
+    }
+
+    #[test]
+    fn test_computer_tool_deserialize() {
+        let json = r#"{"type":"computer_20241022","name":"computer","display_width_px":1920,"display_height_px":1080}"#;
+        let tool: ToolDefinition = serde_json::from_str(json).unwrap();
+        assert!(matches!(tool, ToolDefinition::ComputerUse20241022(_)));
+    }
+
+    #[test]
+    fn test_memory_tool_roundtrip() {
+        let tool = ToolDefinition::Memory(MemoryTool::new());
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"memory_20250818""#));
+        assert!(json.contains(r#""name":"memory""#));
+        let roundtrip: ToolDefinition = serde_json::from_str(&json).unwrap();
+        assert!(matches!(roundtrip, ToolDefinition::Memory(_)));
+    }
+
+    #[test]
+    fn test_tool_search_bm25_roundtrip() {
+        let tool = ToolDefinition::ToolSearchBm25(ToolSearchBm25Tool {
+            max_results: Some(10),
+            ..ToolSearchBm25Tool::new()
+        });
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"tool_search_bm25_20251119""#));
+        assert!(json.contains(r#""max_results":10"#));
+        let roundtrip: ToolDefinition = serde_json::from_str(&json).unwrap();
+        assert!(matches!(roundtrip, ToolDefinition::ToolSearchBm25(_)));
+    }
+
+    #[test]
+    fn test_mcp_toolset_roundtrip() {
+        let tool =
+            ToolDefinition::McpToolset(McpToolset::new("my-server", "https://mcp.example.com/sse"));
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"mcp""#));
+        assert!(json.contains(r#""server_label":"my-server""#));
+        assert!(json.contains(r#""server_url":"https://mcp.example.com/sse""#));
+        let roundtrip: ToolDefinition = serde_json::from_str(&json).unwrap();
+        assert!(matches!(roundtrip, ToolDefinition::McpToolset(_)));
+    }
+
+    #[test]
+    fn test_code_execution_20250522_roundtrip() {
+        let tool = ToolDefinition::CodeExecution20250522(CodeExecutionTool20250522::new());
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"code_execution_20250522""#));
+        let roundtrip: ToolDefinition = serde_json::from_str(&json).unwrap();
+        assert!(matches!(
+            roundtrip,
+            ToolDefinition::CodeExecution20250522(_)
+        ));
+    }
+
+    #[test]
+    fn test_code_execution_20260120_roundtrip() {
+        let tool = ToolDefinition::CodeExecution20260120(CodeExecutionTool20260120::new());
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"code_execution_20260120""#));
+        let roundtrip: ToolDefinition = serde_json::from_str(&json).unwrap();
+        assert!(matches!(
+            roundtrip,
+            ToolDefinition::CodeExecution20260120(_)
+        ));
+    }
+
+    #[test]
+    fn test_bash_20241022_roundtrip() {
+        let tool = ToolDefinition::Bash20241022(BashTool20241022::new());
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"bash_20241022""#));
+        let roundtrip: ToolDefinition = serde_json::from_str(&json).unwrap();
+        assert!(matches!(roundtrip, ToolDefinition::Bash20241022(_)));
+    }
+
+    #[test]
+    fn test_text_editor_20241022_roundtrip() {
+        let tool = ToolDefinition::TextEditor20241022(TextEditorTool20241022::new());
+        let json = serde_json::to_string(&tool).unwrap();
+        assert!(json.contains(r#""type":"text_editor_20241022""#));
+        let roundtrip: ToolDefinition = serde_json::from_str(&json).unwrap();
+        assert!(matches!(roundtrip, ToolDefinition::TextEditor20241022(_)));
     }
 }

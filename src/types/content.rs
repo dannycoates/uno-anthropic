@@ -19,6 +19,12 @@ pub enum ContentBlock {
     ContainerUpload(ContainerUploadBlock),
     WebFetchToolResult(WebFetchToolResultBlock),
     ToolSearchToolResult(ToolSearchToolResultBlock),
+    McpToolUse(McpToolUseBlock),
+    McpToolResult(McpToolResultBlock),
+    CodeExecutionToolResult(CodeExecutionToolResultBlock),
+    BashCodeExecutionToolResult(BashCodeExecutionToolResultBlock),
+    TextEditorCodeExecutionToolResult(TextEditorCodeExecutionToolResultBlock),
+    Compaction(CompactionBlock),
 }
 
 /// A text content block in a response.
@@ -66,6 +72,8 @@ pub struct ServerToolUseBlock {
 pub struct WebSearchToolResultBlock {
     pub tool_use_id: String,
     pub content: WebSearchToolResultContent,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caller: Option<serde_json::Value>,
 }
 
 /// Content of a web search tool result: either search results or an error.
@@ -186,14 +194,16 @@ pub struct WebFetchToolResultErrorBlock {
 pub struct ToolSearchToolResultBlock {
     pub tool_use_id: String,
     pub content: ToolSearchToolResultContent,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caller: Option<serde_json::Value>,
 }
 
 /// Content of a tool search tool result: either search results or an error.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum ToolSearchToolResultContent {
-    SearchResult(ToolSearchToolSearchResultBlock),
-    Error(ToolSearchToolResultError),
+    ToolSearchToolSearchResult(ToolSearchToolSearchResultBlock),
+    ToolSearchToolResultError(ToolSearchToolResultError),
 }
 
 /// A successful tool search result block.
@@ -227,6 +237,142 @@ pub enum ToolSearchToolResultErrorCode {
     ExecutionTimeExceeded,
 }
 
+/// An MCP tool use content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpToolUseBlock {
+    pub id: String,
+    pub server_label: String,
+    pub name: String,
+    pub input: serde_json::Value,
+}
+
+/// An MCP tool result content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpToolResultBlock {
+    pub tool_use_id: String,
+    pub server_label: String,
+    pub content: McpToolResultContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_error: Option<bool>,
+}
+
+/// Content of an MCP tool result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum McpToolResultContent {
+    Blocks(Vec<McpToolResultContentBlock>),
+    Text(String),
+}
+
+/// A content block within an MCP tool result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum McpToolResultContentBlock {
+    Text(McpToolResultTextBlock),
+}
+
+/// A text block within an MCP tool result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpToolResultTextBlock {
+    pub text: String,
+}
+
+/// A code execution tool result content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionToolResultBlock {
+    pub tool_use_id: String,
+    pub content: Vec<CodeExecutionContent>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caller: Option<serde_json::Value>,
+}
+
+/// Content types within a code execution result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum CodeExecutionContent {
+    CodeExecutionOutput(CodeExecutionOutput),
+    CodeExecutionResult(CodeExecutionResult),
+    CodeExecutionError(CodeExecutionError),
+}
+
+/// Standard output from code execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionOutput {
+    pub output: String,
+}
+
+/// Return value from code execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionResult {
+    pub return_value: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub return_type: Option<String>,
+}
+
+/// Error output from code execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionError {
+    pub error_message: String,
+}
+
+/// A bash code execution tool result content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BashCodeExecutionToolResultBlock {
+    pub tool_use_id: String,
+    pub content: Vec<BashCodeExecutionContent>,
+}
+
+/// Content types within a bash code execution result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum BashCodeExecutionContent {
+    BashCodeExecutionOutput(BashCodeExecutionOutput),
+    BashCodeExecutionResult(BashCodeExecutionResultContent),
+}
+
+/// Standard output from bash code execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BashCodeExecutionOutput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stdout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stderr: Option<String>,
+}
+
+/// Return value from bash code execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BashCodeExecutionResultContent {
+    pub return_code: i32,
+}
+
+/// A text editor code execution tool result content block in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextEditorCodeExecutionToolResultBlock {
+    pub tool_use_id: String,
+    pub content: Vec<TextEditorCodeExecutionContent>,
+}
+
+/// Content types within a text editor code execution result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum TextEditorCodeExecutionContent {
+    TextEditorCodeExecutionOutput(TextEditorCodeExecutionOutput),
+}
+
+/// Output from text editor code execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextEditorCodeExecutionOutput {
+    pub output: String,
+}
+
+/// A compaction content block in a response.
+///
+/// Represents a summary produced by context management compaction.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompactionBlock {
+    pub compacted: String,
+}
+
 // ── Request content blocks ───────────────────────────────────────────
 
 /// A content block in a message request.
@@ -247,6 +393,12 @@ pub enum ContentBlockParam {
     ContainerUpload(ContainerUploadBlockParam),
     WebFetchToolResult(WebFetchToolResultBlockParam),
     ToolSearchToolResult(ToolSearchToolResultBlockParam),
+    McpToolUse(McpToolUseBlockParam),
+    McpToolResult(McpToolResultBlockParam),
+    CodeExecutionToolResult(CodeExecutionToolResultBlockParam),
+    BashCodeExecutionToolResult(BashCodeExecutionToolResultBlockParam),
+    TextEditorCodeExecutionToolResult(TextEditorCodeExecutionToolResultBlockParam),
+    Compaction(CompactionBlockParam),
 }
 
 /// A text block in a request.
@@ -300,6 +452,8 @@ pub struct ToolUseBlockParam {
     pub input: serde_json::Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caller: Option<serde_json::Value>,
 }
 
 /// A tool result block in a request.
@@ -358,6 +512,8 @@ pub struct ServerToolUseBlockParam {
     pub input: serde_json::Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caller: Option<serde_json::Value>,
 }
 
 /// A web search tool result block in a request (for multi-turn conversations).
@@ -401,9 +557,15 @@ pub struct ContainerUploadBlockParam {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebFetchToolResultBlockParam {
     pub tool_use_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub retrieved_at: Option<String>,
     pub content: WebFetchToolResultContent,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caller: Option<serde_json::Value>,
 }
 
 /// A tool search tool result block in a request.
@@ -411,6 +573,64 @@ pub struct WebFetchToolResultBlockParam {
 pub struct ToolSearchToolResultBlockParam {
     pub tool_use_id: String,
     pub content: ToolSearchToolResultContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// An MCP tool use block in a request (for multi-turn conversations).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpToolUseBlockParam {
+    pub id: String,
+    pub server_label: String,
+    pub name: String,
+    pub input: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// An MCP tool result block in a request (for multi-turn conversations).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpToolResultBlockParam {
+    pub tool_use_id: String,
+    pub server_label: String,
+    pub content: McpToolResultContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_error: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// A code execution tool result block in a request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeExecutionToolResultBlockParam {
+    pub tool_use_id: String,
+    pub content: Vec<CodeExecutionContent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// A bash code execution tool result block in a request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BashCodeExecutionToolResultBlockParam {
+    pub tool_use_id: String,
+    pub content: Vec<BashCodeExecutionContent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// A text editor code execution tool result block in a request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextEditorCodeExecutionToolResultBlockParam {
+    pub tool_use_id: String,
+    pub content: Vec<TextEditorCodeExecutionContent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
+}
+
+/// A compaction block in a request (for multi-turn round-tripping).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompactionBlockParam {
+    pub compacted: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
 }
@@ -628,5 +848,94 @@ mod tests {
             ContentBlockParam::RedactedThinking(r) => assert_eq!(r.data, "redacted"),
             _ => panic!("Expected RedactedThinking variant"),
         }
+    }
+
+    #[test]
+    fn test_content_block_mcp_tool_use() {
+        let json = r#"{"type":"mcp_tool_use","id":"mcp_1","server_label":"my-server","name":"get_data","input":{"query":"test"}}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match &block {
+            ContentBlock::McpToolUse(m) => {
+                assert_eq!(m.id, "mcp_1");
+                assert_eq!(m.server_label, "my-server");
+                assert_eq!(m.name, "get_data");
+            }
+            _ => panic!("Expected McpToolUse variant"),
+        }
+        let roundtrip = serde_json::to_string(&block).unwrap();
+        let _: ContentBlock = serde_json::from_str(&roundtrip).unwrap();
+    }
+
+    #[test]
+    fn test_content_block_mcp_tool_result() {
+        let json = r#"{"type":"mcp_tool_result","tool_use_id":"mcp_1","server_label":"my-server","content":[{"type":"text","text":"result data"}]}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match &block {
+            ContentBlock::McpToolResult(m) => {
+                assert_eq!(m.tool_use_id, "mcp_1");
+                assert_eq!(m.server_label, "my-server");
+            }
+            _ => panic!("Expected McpToolResult variant"),
+        }
+        let roundtrip = serde_json::to_string(&block).unwrap();
+        let _: ContentBlock = serde_json::from_str(&roundtrip).unwrap();
+    }
+
+    #[test]
+    fn test_content_block_code_execution_tool_result() {
+        let json = r#"{"type":"code_execution_tool_result","tool_use_id":"ce_1","content":[{"type":"code_execution_output","output":"hello\n"},{"type":"code_execution_result","return_value":"42","return_type":"int"}]}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match &block {
+            ContentBlock::CodeExecutionToolResult(c) => {
+                assert_eq!(c.tool_use_id, "ce_1");
+                assert_eq!(c.content.len(), 2);
+            }
+            _ => panic!("Expected CodeExecutionToolResult variant"),
+        }
+        let roundtrip = serde_json::to_string(&block).unwrap();
+        let _: ContentBlock = serde_json::from_str(&roundtrip).unwrap();
+    }
+
+    #[test]
+    fn test_content_block_compaction() {
+        let json =
+            r#"{"type":"compaction","compacted":"This is a summary of the conversation so far."}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match &block {
+            ContentBlock::Compaction(c) => {
+                assert_eq!(c.compacted, "This is a summary of the conversation so far.");
+            }
+            _ => panic!("Expected Compaction variant"),
+        }
+        let roundtrip = serde_json::to_string(&block).unwrap();
+        let _: ContentBlock = serde_json::from_str(&roundtrip).unwrap();
+    }
+
+    #[test]
+    fn test_content_block_param_compaction() {
+        let param = ContentBlockParam::Compaction(CompactionBlockParam {
+            compacted: "summary".to_string(),
+            cache_control: None,
+        });
+        let json = serde_json::to_string(&param).unwrap();
+        assert!(json.contains(r#""type":"compaction""#));
+        assert!(json.contains(r#""compacted":"summary""#));
+        let roundtrip: ContentBlockParam = serde_json::from_str(&json).unwrap();
+        assert!(matches!(roundtrip, ContentBlockParam::Compaction(_)));
+    }
+
+    #[test]
+    fn test_content_block_bash_code_execution_result() {
+        let json = r#"{"type":"bash_code_execution_tool_result","tool_use_id":"bash_1","content":[{"type":"bash_code_execution_output","stdout":"hello","stderr":""},{"type":"bash_code_execution_result","return_code":0}]}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match &block {
+            ContentBlock::BashCodeExecutionToolResult(b) => {
+                assert_eq!(b.tool_use_id, "bash_1");
+                assert_eq!(b.content.len(), 2);
+            }
+            _ => panic!("Expected BashCodeExecutionToolResult variant"),
+        }
+        let roundtrip = serde_json::to_string(&block).unwrap();
+        let _: ContentBlock = serde_json::from_str(&roundtrip).unwrap();
     }
 }

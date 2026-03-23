@@ -77,20 +77,26 @@ fn roundtrip_role() {
 fn roundtrip_thinking_config() {
     roundtrip_json(&ThinkingConfig::Enabled {
         budget_tokens: 10000,
+        display: None,
     });
     roundtrip_json(&ThinkingConfig::Disabled);
-    roundtrip_json(&ThinkingConfig::Adaptive);
+    roundtrip_json(&ThinkingConfig::Adaptive { display: None });
 }
 
 // ── ToolChoice ───────────────────────────────────────────────────────
 
 #[test]
 fn roundtrip_tool_choice() {
-    roundtrip_json(&ToolChoice::Auto);
-    roundtrip_json(&ToolChoice::Any);
+    roundtrip_json(&ToolChoice::Auto {
+        disable_parallel_tool_use: None,
+    });
+    roundtrip_json(&ToolChoice::Any {
+        disable_parallel_tool_use: None,
+    });
     roundtrip_json(&ToolChoice::None);
     roundtrip_json(&ToolChoice::Tool {
         name: "get_weather".to_string(),
+        disable_parallel_tool_use: None,
     });
 }
 
@@ -256,6 +262,7 @@ fn roundtrip_content_block_param_tool_use() {
         name: "calc".to_string(),
         input: serde_json::json!({"x": 42}),
         cache_control: None,
+        caller: None,
     });
     roundtrip_json(&param);
 }
@@ -376,7 +383,7 @@ fn roundtrip_text_citation_all_variants() {
         r#"{"type":"page_location","cited_text":"world","document_index":1,"document_title":"doc","start_page_number":1,"end_page_number":3}"#,
         r#"{"type":"content_block_location","cited_text":"block","document_index":0,"document_title":null,"start_block_index":0,"end_block_index":2}"#,
         r#"{"type":"web_search_result_location","cited_text":"search","encrypted_index":"enc","title":"Example","url":"https://example.com"}"#,
-        r#"{"type":"search_result_location","cited_text":"found","document_index":0,"document_title":null,"start_char_index":10,"end_char_index":20}"#,
+        r#"{"type":"search_result_location","cited_text":"found","search_result_index":0,"source":"web","title":"Result","start_block_index":10,"end_block_index":20}"#,
     ];
     for json in citations_json {
         let citation: TextCitation = serde_json::from_str(json).unwrap();
@@ -409,7 +416,7 @@ fn text_citation_variant_dispatch() {
     assert!(matches!(web_loc, TextCitation::WebSearchResultLocation(_)));
 
     let search_loc: TextCitation = serde_json::from_str(
-        r#"{"type":"search_result_location","cited_text":"e","document_index":0,"document_title":null,"start_char_index":0,"end_char_index":1}"#
+        r#"{"type":"search_result_location","cited_text":"e","search_result_index":0,"source":"web","title":"Result","start_block_index":0,"end_block_index":1}"#
     ).unwrap();
     assert!(matches!(search_loc, TextCitation::SearchResultLocation(_)));
 }
@@ -488,6 +495,7 @@ fn roundtrip_message_param_assistant_blocks() {
             name: "calc".to_string(),
             input: serde_json::json!({}),
             cache_control: None,
+            caller: None,
         }),
     ]);
     roundtrip_json(&param);
@@ -618,6 +626,7 @@ fn roundtrip_multi_turn_conversation() {
                 name: "get_weather".to_string(),
                 input: serde_json::json!({"location": "San Francisco"}),
                 cache_control: None,
+                caller: None,
             }),
         ]),
         MessageParam {
@@ -950,17 +959,17 @@ fn roundtrip_content_block_web_fetch_tool_result_error() {
 
 #[test]
 fn roundtrip_content_block_tool_search_tool_result_success() {
-    let json = r#"{"type":"tool_search_tool_result","tool_use_id":"stu_3","content":{"tool_references":[{"tool_name":"web_search","description":"Search the web"}]}}"#;
+    let json = r#"{"type":"tool_search_tool_result","tool_use_id":"stu_3","content":{"type":"tool_search_tool_search_result","tool_references":[{"tool_name":"web_search","description":"Search the web"}]}}"#;
     let block: ContentBlock = serde_json::from_str(json).unwrap();
     match &block {
         ContentBlock::ToolSearchToolResult(t) => {
             assert_eq!(t.tool_use_id, "stu_3");
             match &t.content {
-                ToolSearchToolResultContent::SearchResult(s) => {
+                ToolSearchToolResultContent::ToolSearchToolSearchResult(s) => {
                     assert_eq!(s.tool_references.len(), 1);
                     assert_eq!(s.tool_references[0].tool_name, "web_search");
                 }
-                _ => panic!("Expected SearchResult content"),
+                _ => panic!("Expected ToolSearchToolSearchResult content"),
             }
         }
         _ => panic!("Expected ToolSearchToolResult"),
@@ -971,17 +980,17 @@ fn roundtrip_content_block_tool_search_tool_result_success() {
 
 #[test]
 fn roundtrip_content_block_tool_search_tool_result_error() {
-    let json = r#"{"type":"tool_search_tool_result","tool_use_id":"stu_4","content":{"error_code":"too_many_requests","error_message":"Rate limit exceeded"}}"#;
+    let json = r#"{"type":"tool_search_tool_result","tool_use_id":"stu_4","content":{"type":"tool_search_tool_result_error","error_code":"too_many_requests","error_message":"Rate limit exceeded"}}"#;
     let block: ContentBlock = serde_json::from_str(json).unwrap();
     match &block {
         ContentBlock::ToolSearchToolResult(t) => {
             assert_eq!(t.tool_use_id, "stu_4");
             match &t.content {
-                ToolSearchToolResultContent::Error(e) => {
+                ToolSearchToolResultContent::ToolSearchToolResultError(e) => {
                     assert_eq!(e.error_code, ToolSearchToolResultErrorCode::TooManyRequests);
                     assert_eq!(e.error_message, "Rate limit exceeded");
                 }
-                _ => panic!("Expected Error content"),
+                _ => panic!("Expected ToolSearchToolResultError content"),
             }
         }
         _ => panic!("Expected ToolSearchToolResult"),

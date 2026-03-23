@@ -15,6 +15,8 @@ pub enum Model {
     ClaudeOpus4_5_20251101,
     #[serde(rename = "claude-opus-4-5")]
     ClaudeOpus4_5,
+    #[serde(rename = "claude-opus-4-1")]
+    ClaudeOpus4_1,
     #[serde(rename = "claude-opus-4-1-20250805")]
     ClaudeOpus4_1_20250805,
     #[serde(rename = "claude-opus-4-0")]
@@ -81,6 +83,7 @@ impl Model {
             Model::ClaudeOpus4_6
             | Model::ClaudeOpus4_5_20251101
             | Model::ClaudeOpus4_5
+            | Model::ClaudeOpus4_1
             | Model::ClaudeOpus4_1_20250805
             | Model::ClaudeOpus4_0
             | Model::ClaudeOpus4_20250514
@@ -151,6 +154,67 @@ pub struct ModelInfo {
     pub display_name: String,
     #[serde(default)]
     pub created_at: Option<String>,
+    #[serde(default)]
+    pub max_tokens: Option<u64>,
+    #[serde(default)]
+    pub max_input_tokens: Option<u64>,
+    #[serde(default)]
+    pub capabilities: Option<ModelCapabilities>,
+}
+
+/// Model capability information.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ModelCapabilities {
+    #[serde(default)]
+    pub batch: Option<CapabilitySupport>,
+    #[serde(default)]
+    pub citations: Option<CapabilitySupport>,
+    #[serde(default)]
+    pub code_execution: Option<CapabilitySupport>,
+    #[serde(default)]
+    pub image_input: Option<CapabilitySupport>,
+    #[serde(default)]
+    pub pdf_input: Option<CapabilitySupport>,
+    #[serde(default)]
+    pub structured_outputs: Option<CapabilitySupport>,
+    #[serde(default)]
+    pub thinking: Option<ThinkingCapability>,
+    #[serde(default)]
+    pub context_management: Option<ContextManagementCapability>,
+    #[serde(default)]
+    pub effort: Option<EffortCapability>,
+}
+
+/// Whether a capability is supported.
+#[derive(Debug, Clone, Deserialize)]
+pub struct CapabilitySupport {
+    pub supported: bool,
+}
+
+/// Thinking capability details.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ThinkingCapability {
+    pub supported: bool,
+    #[serde(default)]
+    pub types: Option<Vec<String>>,
+}
+
+/// Context management capability details.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ContextManagementCapability {
+    #[serde(default)]
+    pub clear_thinking_20251015: Option<bool>,
+    #[serde(default)]
+    pub clear_tool_uses_20250919: Option<bool>,
+    #[serde(default)]
+    pub compact_20260112: Option<bool>,
+}
+
+/// Effort capability details.
+#[derive(Debug, Clone, Deserialize)]
+pub struct EffortCapability {
+    #[serde(default)]
+    pub supported: Vec<String>,
 }
 
 /// A parsed model specification that may include option flags.
@@ -214,6 +278,7 @@ mod tests {
             (Model::ClaudeSonnet4_6, "claude-sonnet-4-6"),
             (Model::ClaudeOpus4_5_20251101, "claude-opus-4-5-20251101"),
             (Model::ClaudeOpus4_5, "claude-opus-4-5"),
+            (Model::ClaudeOpus4_1, "claude-opus-4-1"),
             (Model::ClaudeOpus4_1_20250805, "claude-opus-4-1-20250805"),
             (Model::ClaudeOpus4_0, "claude-opus-4-0"),
             (Model::ClaudeOpus4_20250514, "claude-opus-4-20250514"),
@@ -265,6 +330,59 @@ mod tests {
         assert_eq!(info.model_type, "model");
         assert_eq!(info.display_name, "Claude Opus 4.6");
         assert_eq!(info.created_at.as_deref(), Some("2025-01-01T00:00:00Z"));
+        assert!(info.max_tokens.is_none());
+        assert!(info.capabilities.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_model_info_with_capabilities() {
+        let json = r#"{
+            "id": "claude-opus-4-6",
+            "type": "model",
+            "display_name": "Claude Opus 4.6",
+            "created_at": "2025-01-01T00:00:00Z",
+            "max_tokens": 32768,
+            "max_input_tokens": 200000,
+            "capabilities": {
+                "batch": {"supported": true},
+                "citations": {"supported": true},
+                "code_execution": {"supported": true},
+                "image_input": {"supported": true},
+                "pdf_input": {"supported": true},
+                "structured_outputs": {"supported": true},
+                "thinking": {"supported": true, "types": ["adaptive", "enabled"]},
+                "context_management": {
+                    "clear_thinking_20251015": true,
+                    "clear_tool_uses_20250919": true,
+                    "compact_20260112": true
+                },
+                "effort": {"supported": ["low", "medium", "high", "max"]}
+            }
+        }"#;
+        let info: ModelInfo = serde_json::from_str(json).unwrap();
+        assert_eq!(info.max_tokens, Some(32768));
+        assert_eq!(info.max_input_tokens, Some(200000));
+        let caps = info.capabilities.unwrap();
+        assert!(caps.batch.unwrap().supported);
+        assert!(caps.thinking.as_ref().unwrap().supported);
+        assert_eq!(
+            caps.thinking
+                .as_ref()
+                .unwrap()
+                .types
+                .as_ref()
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(caps.effort.as_ref().unwrap().supported.len(), 4);
+        assert!(
+            caps.context_management
+                .as_ref()
+                .unwrap()
+                .compact_20260112
+                .unwrap()
+        );
     }
 
     #[test]

@@ -11,6 +11,10 @@ pub struct Usage {
     pub cache_read_input_tokens: Option<u32>,
     #[serde(default)]
     pub server_tool_use: Option<ServerToolUsage>,
+    #[serde(default)]
+    pub ephemeral_5m_input_tokens: Option<u32>,
+    #[serde(default)]
+    pub ephemeral_1h_input_tokens: Option<u32>,
 }
 
 /// Usage information specific to server tool use.
@@ -71,6 +75,19 @@ mod tests {
             usage.server_tool_use.as_ref().unwrap().web_search_requests,
             Some(3)
         );
+    }
+
+    #[test]
+    fn test_deserialize_usage_with_ttl_tokens() {
+        let json = r#"{
+            "input_tokens": 100,
+            "output_tokens": 50,
+            "ephemeral_5m_input_tokens": 30,
+            "ephemeral_1h_input_tokens": 20
+        }"#;
+        let usage: Usage = serde_json::from_str(json).unwrap();
+        assert_eq!(usage.ephemeral_5m_input_tokens, Some(30));
+        assert_eq!(usage.ephemeral_1h_input_tokens, Some(20));
     }
 
     #[test]

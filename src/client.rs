@@ -64,6 +64,16 @@ impl Client {
         crate::batches::BatchService::new(self)
     }
 
+    /// Access the Files service (beta).
+    pub fn files(&self) -> crate::files::FileService<'_> {
+        crate::files::FileService::new(self)
+    }
+
+    /// Access the Skills service (beta).
+    pub fn skills(&self) -> crate::skills::SkillService<'_> {
+        crate::skills::SkillService::new(self)
+    }
+
     /// Access the Beta service.
     pub fn beta(&self) -> crate::beta::BetaService<'_> {
         crate::beta::BetaService::new(self)

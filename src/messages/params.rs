@@ -1,7 +1,10 @@
 use serde::Serialize;
 
 use crate::types::message::{MessageParam, SystemContent};
-use crate::types::metadata::{Metadata, OutputConfig, ServiceTier};
+use crate::types::metadata::{
+    CacheControl, ContextManagementConfig, InferenceGeo, Metadata, OutputConfig, ReasoningEffort,
+    ServiceTier,
+};
 use crate::types::model::Model;
 use crate::types::thinking::ThinkingConfig;
 use crate::types::tool::{ToolChoice, ToolDefinition};
@@ -46,6 +49,19 @@ pub struct MessageCreateParams {
     pub top_k: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effort: Option<ReasoningEffort>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inference_geo: Option<InferenceGeo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_management: Option<ContextManagementConfig>,
+    /// Container identifier for code execution reuse across requests.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container: Option<String>,
+    /// Top-level cache control that automatically applies a cache_control marker
+    /// to the last cacheable block in the request.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<CacheControl>,
     /// Beta feature flags sent as the `anthropic-beta` header.
     /// Not serialized into the JSON body — extracted by the MessageService.
     #[serde(skip)]
@@ -115,6 +131,7 @@ mod tests {
             .stop_sequences(vec!["STOP".to_string()])
             .thinking(ThinkingConfig::Enabled {
                 budget_tokens: 5000,
+                display: None,
             })
             .service_tier(ServiceTier::Auto)
             .build();

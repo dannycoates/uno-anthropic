@@ -64,10 +64,11 @@ pub struct WebSearchResultLocationCitation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResultLocationCitation {
     pub cited_text: String,
-    pub document_index: u32,
-    pub document_title: Option<String>,
-    pub start_char_index: u32,
-    pub end_char_index: u32,
+    pub search_result_index: u32,
+    pub source: String,
+    pub title: String,
+    pub start_block_index: u32,
+    pub end_block_index: u32,
 }
 
 #[cfg(test)]
@@ -133,12 +134,16 @@ mod tests {
 
     #[test]
     fn test_search_result_location_citation() {
-        let json = r#"{"type":"search_result_location","cited_text":"search text","document_index":0,"document_title":"result","start_char_index":5,"end_char_index":20}"#;
+        let json = r#"{"type":"search_result_location","cited_text":"search text","search_result_index":0,"source":"web","title":"result","start_block_index":5,"end_block_index":20}"#;
         let citation: TextCitation = serde_json::from_str(json).unwrap();
         match citation {
             TextCitation::SearchResultLocation(s) => {
                 assert_eq!(s.cited_text, "search text");
-                assert_eq!(s.start_char_index, 5);
+                assert_eq!(s.search_result_index, 0);
+                assert_eq!(s.source, "web");
+                assert_eq!(s.title, "result");
+                assert_eq!(s.start_block_index, 5);
+                assert_eq!(s.end_block_index, 20);
             }
             _ => panic!("Expected SearchResultLocation variant"),
         }

@@ -63,6 +63,9 @@ pub enum ContentBlockDelta {
     CitationsDelta {
         citation: serde_json::Value, // TextCitation, kept as Value to avoid circular dep issues
     },
+    CompactionDelta {
+        compacted: String,
+    },
 }
 
 /// Delta information in a `message_delta` streaming event.
@@ -275,6 +278,12 @@ fn apply_delta(
                 .or_default()
                 .push_str(partial_json);
         }
+        (
+            ContentBlock::Compaction(compaction_block),
+            ContentBlockDelta::CompactionDelta { compacted },
+        ) => {
+            compaction_block.compacted.push_str(compacted);
+        }
         _ => {
             // Other combinations (citation deltas, etc.)
         }
@@ -405,5 +414,51 @@ mod tests {
             0,
         );
         assert_eq!(bufs.get(&0).unwrap(), r#"{"location":"SF"}"#);
+    }
+
+    #[test]
+    fn test_apply_delta_compaction() {
+        let mut block = ContentBlock::Compaction(crate::types::content::CompactionBlock {
+            compacted: "Part 1".to_string(),
+        });
+        let mut bufs = std::collections::HashMap::new();
+        apply_delta(
+            &mut block,
+            &ContentBlockDelta::CompactionDelta {
+                compacted: " Part 2".to_string(),
+            },
+            &mut bufs,
+            0,
+        );
+        match block {
+            ContentBlock::Compaction(c) => assert_eq!(c.compacted, "Part 1 Part 2"),
+            _ => panic!("Expected Compaction block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_compaction_delta() {
+        let raw = RawSseEvent {
+            event: Some("content_block_delta".to_string()),
+            data: Some(
+                r#"{"index":0,"delta":{"type":"compaction_delta","compacted":"summary text"}}"#
+                    .to_string(),
+            ),
+            id: None,
+            retry: None,
+        };
+        let event = parse_stream_event(raw).unwrap();
+        match event {
+            StreamEvent::ContentBlockDelta { index, delta } => {
+                assert_eq!(index, 0);
+                match delta {
+                    ContentBlockDelta::CompactionDelta { compacted } => {
+                        assert_eq!(compacted, "summary text");
+                    }
+                    _ => panic!("Expected CompactionDelta"),
+                }
+            }
+            _ => panic!("Expected ContentBlockDelta"),
+        }
     }
 }

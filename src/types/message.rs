@@ -17,6 +17,17 @@ pub struct Message {
     #[serde(default)]
     pub stop_sequence: Option<String>,
     pub usage: Usage,
+    /// Container information for code execution tool reuse.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container: Option<ContainerInfo>,
+}
+
+/// Information about the container used in a request.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ContainerInfo {
+    pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
 }
 
 impl Message {
@@ -39,6 +50,7 @@ impl Message {
                                 name: t.name.clone(),
                                 input: t.input.clone(),
                                 cache_control: None,
+                                caller: None,
                             })
                         }
                         ContentBlock::Thinking(t) => {
@@ -60,6 +72,7 @@ impl Message {
                                 name: s.name.clone(),
                                 input: s.input.clone(),
                                 cache_control: None,
+                                caller: None,
                             },
                         ),
                         ContentBlock::WebSearchToolResult(w) => {
@@ -81,8 +94,11 @@ impl Message {
                             ContentBlockParam::WebFetchToolResult(
                                 super::content::WebFetchToolResultBlockParam {
                                     tool_use_id: w.tool_use_id.clone(),
+                                    url: None,
+                                    retrieved_at: None,
                                     content: w.content.clone(),
                                     cache_control: None,
+                                    caller: w.caller.clone(),
                                 },
                             )
                         }
@@ -94,6 +110,57 @@ impl Message {
                                     cache_control: None,
                                 },
                             )
+                        }
+                        ContentBlock::McpToolUse(m) => {
+                            ContentBlockParam::McpToolUse(super::content::McpToolUseBlockParam {
+                                id: m.id.clone(),
+                                server_label: m.server_label.clone(),
+                                name: m.name.clone(),
+                                input: m.input.clone(),
+                                cache_control: None,
+                            })
+                        }
+                        ContentBlock::McpToolResult(m) => ContentBlockParam::McpToolResult(
+                            super::content::McpToolResultBlockParam {
+                                tool_use_id: m.tool_use_id.clone(),
+                                server_label: m.server_label.clone(),
+                                content: m.content.clone(),
+                                is_error: m.is_error,
+                                cache_control: None,
+                            },
+                        ),
+                        ContentBlock::CodeExecutionToolResult(c) => {
+                            ContentBlockParam::CodeExecutionToolResult(
+                                super::content::CodeExecutionToolResultBlockParam {
+                                    tool_use_id: c.tool_use_id.clone(),
+                                    content: c.content.clone(),
+                                    cache_control: None,
+                                },
+                            )
+                        }
+                        ContentBlock::BashCodeExecutionToolResult(b) => {
+                            ContentBlockParam::BashCodeExecutionToolResult(
+                                super::content::BashCodeExecutionToolResultBlockParam {
+                                    tool_use_id: b.tool_use_id.clone(),
+                                    content: b.content.clone(),
+                                    cache_control: None,
+                                },
+                            )
+                        }
+                        ContentBlock::TextEditorCodeExecutionToolResult(t) => {
+                            ContentBlockParam::TextEditorCodeExecutionToolResult(
+                                super::content::TextEditorCodeExecutionToolResultBlockParam {
+                                    tool_use_id: t.tool_use_id.clone(),
+                                    content: t.content.clone(),
+                                    cache_control: None,
+                                },
+                            )
+                        }
+                        ContentBlock::Compaction(c) => {
+                            ContentBlockParam::Compaction(super::content::CompactionBlockParam {
+                                compacted: c.compacted.clone(),
+                                cache_control: None,
+                            })
                         }
                     })
                     .collect(),

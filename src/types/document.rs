@@ -10,6 +10,13 @@ pub enum DocumentSource {
     Text(PlainTextSource),
     Content(ContentBlockSource),
     Url(UrlDocumentSource),
+    File(FileDocumentSource),
+}
+
+/// A file-based document source (references a previously uploaded file).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileDocumentSource {
+    pub file_id: String,
 }
 
 /// A base64-encoded document source (PDF).
@@ -87,6 +94,21 @@ mod tests {
         match deserialized {
             DocumentSource::Url(u) => assert_eq!(u.url, "https://example.com/doc.pdf"),
             _ => panic!("Expected Url variant"),
+        }
+    }
+
+    #[test]
+    fn test_file_document_source_roundtrip() {
+        let source = DocumentSource::File(FileDocumentSource {
+            file_id: "file_doc123".to_string(),
+        });
+        let json = serde_json::to_string(&source).unwrap();
+        assert!(json.contains(r#""type":"file""#));
+        assert!(json.contains(r#""file_id":"file_doc123""#));
+        let deserialized: DocumentSource = serde_json::from_str(&json).unwrap();
+        match deserialized {
+            DocumentSource::File(f) => assert_eq!(f.file_id, "file_doc123"),
+            _ => panic!("Expected File variant"),
         }
     }
 
